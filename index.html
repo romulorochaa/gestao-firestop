@@ -376,50 +376,63 @@ tr:hover td{background:var(--surface2)}
 
       <!-- CRONOGRAMA / GANTT -->
       <div class="page" id="page-gantt">
-        <div class="page-title">Cronograma de obras</div>
-        <div class="page-sub">Acompanhamento de execução por proposta aprovada</div>
 
-        <!-- Seletor de obra -->
-        <div class="card" style="margin-bottom:18px">
-          <div class="card-header">
-            <div class="card-title">Selecionar obra</div>
+        <!-- ── VISÃO DASHBOARD (padrão) ── -->
+        <div id="gantt-dashboard">
+          <div class="page-title">Cronograma de obras</div>
+          <div class="page-sub">Visão geral do andamento de todas as obras em execução</div>
+
+          <!-- Métricas gerais -->
+          <div class="metrics" style="margin-bottom:22px">
+            <div class="metric"><div class="metric-label">Total de obras</div><div class="metric-value" id="gd-total">—</div></div>
+            <div class="metric"><div class="metric-label">Em dia</div><div class="metric-value" id="gd-emdia" style="color:var(--green)">—</div></div>
+            <div class="metric"><div class="metric-label">Em atenção</div><div class="metric-value" id="gd-atencao" style="color:var(--amber)">—</div></div>
+            <div class="metric"><div class="metric-label">Atrasadas</div><div class="metric-value" id="gd-atrasadas" style="color:var(--red)">—</div></div>
+            <div class="metric"><div class="metric-label">Concluídas</div><div class="metric-value" id="gd-concluidas" style="color:var(--text3)">—</div></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end">
-            <div class="fg" style="margin-bottom:0">
-              <label>Proposta aprovada</label>
-              <select id="gantt-select-orc" onchange="carregarGantt()">
-                <option value="">— Selecione uma proposta aprovada —</option>
-              </select>
-            </div>
-            <button class="btn btn-sm" onclick="carregarGanttOrcamentos()">Atualizar lista</button>
+
+          <!-- Alertas -->
+          <div id="gd-alertas"></div>
+
+          <!-- Cards de obras -->
+          <div id="gd-cards">
+            <div class="loading"><span class="spinner"></span>Carregando obras...</div>
           </div>
         </div>
 
-        <!-- Painel da obra selecionada -->
-        <div id="gantt-painel" style="display:none">
+        <!-- ── VISÃO DETALHE DA OBRA ── -->
+        <div id="gantt-detalhe" style="display:none">
+
+          <!-- Breadcrumb -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+            <button class="btn btn-sm" onclick="voltarDashboardGantt()">← Voltar</button>
+            <span style="font-size:13px;color:var(--text2)">Cronograma de obras</span>
+            <span style="font-size:13px;color:var(--text3)">/</span>
+            <span style="font-size:13px;font-weight:500" id="gantt-titulo-obra">—</span>
+          </div>
 
           <!-- Cabeçalho da obra -->
           <div class="card" style="margin-bottom:18px">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
               <div>
-                <div class="card-title" id="gantt-titulo-obra">—</div>
+                <div class="card-title" id="gantt-titulo-obra2">—</div>
                 <div style="font-size:13px;color:var(--text2);margin-top:4px" id="gantt-cliente-obra">—</div>
+                <div style="font-size:12px;color:var(--text3);margin-top:2px" id="gantt-prazo-obra"></div>
               </div>
-              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
                 <div style="text-align:center">
                   <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Progresso geral</div>
-                  <div style="font-size:22px;font-weight:700;color:var(--blue)" id="gantt-progresso-geral">0%</div>
+                  <div style="font-size:26px;font-weight:700;color:var(--blue)" id="gantt-progresso-geral">0%</div>
                 </div>
                 <div style="text-align:center">
                   <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Itens concluídos</div>
-                  <div style="font-size:22px;font-weight:700;color:var(--green)" id="gantt-itens-ok">0/0</div>
+                  <div style="font-size:26px;font-weight:700;color:var(--green)" id="gantt-itens-ok">0/0</div>
                 </div>
                 <button class="btn btn-sm" onclick="abrirConfigurarDatas()" id="btn-config-datas">Configurar datas</button>
               </div>
             </div>
-            <!-- Barra de progresso geral -->
-            <div style="margin-top:14px;background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
-              <div id="gantt-barra-geral" style="height:100%;background:var(--blue);border-radius:4px;transition:width .4s;width:0%"></div>
+            <div style="margin-top:14px;background:var(--surface2);border-radius:4px;height:10px;overflow:hidden">
+              <div id="gantt-barra-geral" style="height:100%;background:var(--blue);border-radius:4px;transition:width .5s;width:0%"></div>
             </div>
           </div>
 
@@ -437,13 +450,13 @@ tr:hover td{background:var(--surface2)}
             <div id="gantt-chart" style="min-height:100px"></div>
           </div>
 
-          <!-- Tabela de itens editável -->
+          <!-- Tabela de itens -->
           <div class="card" style="margin-bottom:18px">
             <div class="card-header"><div class="card-title">Itens da obra</div></div>
             <div id="gantt-tabela" style="overflow-x:auto"></div>
           </div>
 
-          <!-- Comentários da obra -->
+          <!-- Comentários -->
           <div class="card">
             <div class="card-header"><div class="card-title">Comentários da obra</div></div>
             <div id="gantt-comentarios" style="margin-bottom:14px;max-height:320px;overflow-y:auto"></div>
@@ -455,11 +468,7 @@ tr:hover td{background:var(--surface2)}
             </div>
           </div>
 
-        </div><!-- /gantt-painel -->
-
-        <div id="gantt-vazio" style="text-align:center;padding:60px 20px;color:var(--text3);font-size:14px">
-          Selecione uma proposta aprovada para visualizar o cronograma.
-        </div>
+        </div><!-- /gantt-detalhe -->
       </div>
 
       <!-- USUARIO -->
@@ -2078,7 +2087,7 @@ const IMG_P=[
 // ── CRONOGRAMA / GANTT ────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════
 
-let _ganttOrcId=null, _ganttItens=[], _ganttOrc=null;
+let _ganttOrcId=null, _ganttItens=[], _ganttOrc=null, _ganttTodasObras=[];
 
 const STATUS_CORES={
   'Pendente':    {bg:'#f0eeea',border:'#888780',text:'#5a5855'},
@@ -2087,32 +2096,155 @@ const STATUS_CORES={
   'Bloqueado':   {bg:'#fdecea',border:'#c0392b',text:'#c0392b'},
 };
 
+// ── DASHBOARD DE OBRAS ────────────────────────────────────────
 async function renderGanttPage(){
-  await carregarGanttOrcamentos();
+  document.getElementById('gantt-dashboard').style.display='block';
+  document.getElementById('gantt-detalhe').style.display='none';
+  await renderGanttDashboard();
+}
+
+async function renderGanttDashboard(){
+  // Busca todas obras aprovadas + seus itens
+  const{data:obras}=await SB.from('orcamentos')
+    .select('id,numero,titulo,cliente_nome,valor_total,data_emissao,validade_dias,prazo_execucao')
+    .eq('status','Aprovado')
+    .order('numero',{ascending:false});
+
+  if(!obras||!obras.length){
+    document.getElementById('gd-cards').innerHTML=`
+      <div style="text-align:center;padding:60px 20px;color:var(--text3);font-size:14px">
+        Nenhuma obra em execução. Confirme o contrato de uma proposta para iniciar o acompanhamento.
+      </div>`;
+    ['gd-total','gd-emdia','gd-atencao','gd-atrasadas','gd-concluidas'].forEach(id=>document.getElementById(id).textContent='0');
+    return;
+  }
+
+  // Busca itens de todas as obras de uma vez
+  const obraIds=obras.map(o=>o.id);
+  const{data:todosItens}=await SB.from('itens_orcamento')
+    .select('orcamento_id,status_execucao,progresso,data_fim_prevista')
+    .in('orcamento_id',obraIds);
+
+  const hoje_ms=new Date(hoje()+'T00:00:00').getTime();
+  const DIAS_ATENCAO=7; // obras com prazo <= 7 dias = "atenção"
+
+  // Classifica cada obra
+  const obras_info=obras.map(o=>{
+    const itens=(todosItens||[]).filter(i=>i.orcamento_id===o.id);
+    const total=itens.length;
+    const concluidos=itens.filter(i=>i.status_execucao==='Concluído').length;
+    const progresso=total>0?Math.round(itens.reduce((s,i)=>s+Number(i.progresso||0),0)/total):0;
+
+    // Prazo final = maior data_fim_prevista entre os itens
+    const datas=itens.filter(i=>i.data_fim_prevista).map(i=>new Date(i.data_fim_prevista+'T00:00:00').getTime());
+    const prazoFinal=datas.length?new Date(Math.max(...datas)):null;
+    const diasRestantes=prazoFinal?Math.ceil((prazoFinal.getTime()-hoje_ms)/86400000):null;
+
+    let situacao='semdata';
+    if(progresso===100||concluidos===total&&total>0) situacao='concluida';
+    else if(diasRestantes===null) situacao='semdata';
+    else if(diasRestantes<0) situacao='atrasada';
+    else if(diasRestantes<=DIAS_ATENCAO) situacao='atencao';
+    else situacao='emdia';
+
+    return{...o,itens,total,concluidos,progresso,prazoFinal,diasRestantes,situacao};
+  });
+
+  _ganttTodasObras=obras_info;
+
+  // Contadores
+  const cnt={emdia:0,atencao:0,atrasada:0,concluida:0,semdata:0};
+  obras_info.forEach(o=>cnt[o.situacao]=(cnt[o.situacao]||0)+1);
+  document.getElementById('gd-total').textContent=obras_info.length;
+  document.getElementById('gd-emdia').textContent=cnt.emdia+(cnt.semdata||0);
+  document.getElementById('gd-atencao').textContent=cnt.atencao||0;
+  document.getElementById('gd-atrasadas').textContent=cnt.atrasada||0;
+  document.getElementById('gd-concluidas').textContent=cnt.concluida||0;
+
+  // Alertas
+  const alertas=document.getElementById('gd-alertas');
+  alertas.innerHTML='';
+  obras_info.filter(o=>o.situacao==='atrasada').forEach(o=>{
+    alertas.innerHTML+=`<div class="alert alert-red">⚠ <strong>${o.cliente_nome}</strong> — ${o.titulo}: prazo encerrado há ${Math.abs(o.diasRestantes)} dia(s)</div>`;
+  });
+  obras_info.filter(o=>o.situacao==='atencao').forEach(o=>{
+    alertas.innerHTML+=`<div class="alert alert-amber">⚡ <strong>${o.cliente_nome}</strong> — ${o.titulo}: ${o.diasRestantes} dia(s) restantes</div>`;
+  });
+
+  // Cards
+  const COR_SITUACAO={
+    emdia:  {bg:'var(--green-bg)',  border:'#a8d5a8',  label:'Em dia',    lc:'var(--green)'},
+    atencao:{bg:'var(--amber-bg)',  border:'#f5d79e',  label:'Atenção',   lc:'var(--amber)'},
+    atrasada:{bg:'var(--red-bg)',   border:'#f5c0bc',  label:'Atrasada',  lc:'var(--red)'},
+    concluida:{bg:'var(--surface2)',border:'var(--border)',label:'Concluída',lc:'var(--text3)'},
+    semdata:{bg:'var(--surface2)',  border:'var(--border)',label:'Sem datas',lc:'var(--text3)'},
+  };
+
+  // Ordena: atrasadas > atenção > em dia > sem data > concluídas
+  const ordem={atrasada:0,atencao:1,emdia:2,semdata:3,concluida:4};
+  obras_info.sort((a,b)=>(ordem[a.situacao]||9)-(ordem[b.situacao]||9));
+
+  document.getElementById('gd-cards').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+      ${obras_info.map(o=>{
+        const cor=COR_SITUACAO[o.situacao]||COR_SITUACAO.semdata;
+        const prazoStr=o.prazoFinal?
+          (o.diasRestantes<0?`<span style="color:var(--red);font-weight:600">Atrasada ${Math.abs(o.diasRestantes)}d</span>`:
+           o.diasRestantes===0?`<span style="color:var(--red);font-weight:600">Vence hoje!</span>`:
+           `<span style="color:${o.diasRestantes<=7?'var(--amber)':'var(--text2)'}">Prazo: ${fmtData(o.prazoFinal.toISOString().split('T')[0])} (${o.diasRestantes}d)</span>`)
+          :'<span style="color:var(--text3)">Datas não configuradas</span>';
+
+        return`<div style="background:var(--surface);border:0.5px solid ${cor.border};border-left:4px solid ${cor.lc};border-radius:var(--r2);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s"
+          onclick="abrirDetalheObra('${o.id}')" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='var(--shadow)'">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+            <div>
+              <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">Nº ${String(o.numero).padStart(5,'0')}</div>
+              <div style="font-weight:600;font-size:14px;margin-top:2px;line-height:1.3">${o.cliente_nome}</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:2px;line-height:1.3">${o.titulo}</div>
+            </div>
+            <span style="font-size:10px;padding:3px 8px;border-radius:10px;background:${cor.bg};color:${cor.lc};border:0.5px solid ${cor.border};white-space:nowrap;flex-shrink:0;margin-left:8px">${cor.label}</span>
+          </div>
+          <!-- Barra de progresso -->
+          <div style="margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+              <span style="font-size:11px;color:var(--text2)">Progresso</span>
+              <span style="font-size:11px;font-weight:600;color:${o.progresso===100?'var(--green)':'var(--text2)'}">${o.progresso}%</span>
+            </div>
+            <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden">
+              <div style="height:100%;width:${o.progresso}%;background:${o.progresso===100?'var(--green)':o.progresso>60?'var(--blue)':'var(--amber)'};border-radius:4px;transition:width .4s"></div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+            <span style="font-size:12px;color:var(--text2)">${o.concluidos}/${o.total} itens</span>
+            <span style="font-size:12px">${prazoStr}</span>
+          </div>
+          <div style="margin-top:10px;text-align:right">
+            <span style="font-size:12px;color:var(--blue);font-weight:500">Abrir cronograma →</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function voltarDashboardGantt(){
+  document.getElementById('gantt-detalhe').style.display='none';
+  document.getElementById('gantt-dashboard').style.display='block';
+  renderGanttDashboard();
+}
+
+async function abrirDetalheObra(id){
+  document.getElementById('gantt-dashboard').style.display='none';
+  document.getElementById('gantt-detalhe').style.display='block';
+  _ganttOrcId=id;
+  await carregarGantt(id);
 }
 
 async function carregarGanttOrcamentos(){
-  const{data}=await SB.from('orcamentos')
-    .select('id,numero,titulo,cliente_nome,status')
-    .eq('status','Aprovado')
-    .order('numero',{ascending:false});
-  const sel=document.getElementById('gantt-select-orc');
-  const cur=sel.value;
-  sel.innerHTML='<option value="">— Selecione uma proposta aprovada —</option>';
-  (data||[]).forEach(o=>{
-    sel.innerHTML+=`<option value="${o.id}">Nº ${String(o.numero).padStart(5,'0')} — ${o.cliente_nome} — ${o.titulo}</option>`;
-  });
-  if(cur) sel.value=cur;
+  renderGanttDashboard();
 }
 
-async function carregarGantt(){
-  const id=document.getElementById('gantt-select-orc').value;
-  if(!id){
-    document.getElementById('gantt-painel').style.display='none';
-    document.getElementById('gantt-vazio').style.display='block';
-    _ganttOrcId=null;
-    return;
-  }
+async function carregarGantt(id){
+  if(!id)return;
   _ganttOrcId=id;
   const[{data:orc},{data:itens},{data:comentarios}]=await Promise.all([
     SB.from('orcamentos').select('*').eq('id',id).single(),
@@ -2121,10 +2253,12 @@ async function carregarGantt(){
   ]);
   _ganttOrc=orc;
   _ganttItens=itens||[];
-  document.getElementById('gantt-painel').style.display='block';
-  document.getElementById('gantt-vazio').style.display='none';
   document.getElementById('gantt-titulo-obra').textContent=orc?.titulo||'—';
+  document.getElementById('gantt-titulo-obra2').textContent=orc?.titulo||'—';
   document.getElementById('gantt-cliente-obra').textContent=orc?.cliente_nome||'—';
+  // Prazo
+  const prazoEl=document.getElementById('gantt-prazo-obra');
+  if(orc?.prazo_execucao) prazoEl.textContent='Prazo: '+orc.prazo_execucao;
   renderGanttMetricas();
   renderGanttChart();
   renderGanttTabela();
