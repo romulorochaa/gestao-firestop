@@ -776,7 +776,8 @@ async function popularSelects(){
 }
 
 async function log(tipo,desc,status){
-  await SB.from('atividades').insert({tipo,descricao:desc,status,usuario_nome:PERFIL?.nome||USER?.email});
+  // Não bloqueia — falha silenciosa se não houver autenticação
+  SB.from('atividades').insert({tipo,descricao:desc,status,usuario_nome:'Firestop'}).then(()=>{}).catch(()=>{});
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -1425,7 +1426,7 @@ async function salvarOrcamento(){
   } else {
     const{count}=await SB.from('orcamentos').select('*',{count:'exact',head:true});
     payload.numero=(count||0)+1;
-    payload.criado_por=USER.id;
+    payload.criado_por=null;
     const{data:novo,error}=await SB.from('orcamentos').insert(payload).select().single();
     if(error){alert('Erro ao criar: '+error.message);return;}
     ORC_ATIVO=novo.id;
