@@ -568,7 +568,7 @@ tr:hover td{background:var(--surface2)}
       </div>
       <div class="modal-footer">
         <button class="btn" onclick="closeModal('modal-orcamento')">Cancelar</button>
-        <button class="btn btn-primary" onclick="salvarOrcamento()">Salvar e ir para itens →</button>
+        <button class="btn btn-primary" onclick="salvarEIrParaItens()">Salvar e ir para itens →</button>
       </div>
     </div>
 
@@ -1657,6 +1657,31 @@ async function excluirOrc(id){
   renderOrcamentos();
 }
 // ── FIM ORÇAMENTOS ────────────────────────────────────────────
+
+// ── NAVEGAÇÃO DAS ABAS DO ORÇAMENTO ──────────────────────────
+function orcSetTab(el, paneId){
+  // Ativa a aba clicada dentro do modal de orçamento
+  document.querySelectorAll('#modal-orcamento .modal-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.querySelectorAll('#modal-orcamento .modal-pane').forEach(p=>p.classList.remove('active'));
+  if(paneId){
+    const pane=document.getElementById(paneId);
+    if(pane) pane.classList.add('active');
+  }
+  if(paneId==='orc-pane-preview' && ORC_ATIVO) gerarPreviewDoc();
+  if(paneId==='orc-pane-itens' && ORC_ATIVO) renderItensOrc();
+}
+
+function orcIrParaAba(tabId, paneId){
+  // Ativa uma aba específica pelo ID da tab e do pane
+  const tab=document.getElementById(tabId);
+  orcSetTab(tab, paneId);
+}
+
+async function salvarEIrParaItens(){
+  await salvarOrcamento();
+  if(ORC_ATIVO) setTimeout(()=>orcIrParaAba('orc-tab-itens','orc-pane-itens'), 300);
+}
 
 // ── INIT ──────────────────────────────────────────────────────
 document.getElementById('l-data').value=hoje();
