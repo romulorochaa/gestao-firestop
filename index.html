@@ -1145,7 +1145,7 @@ async function abrirDetalheVenda(id){
   document.getElementById('v-cliente').value=v.cliente_id||'';
   document.getElementById('v-servico').value=v.servico;
   document.getElementById('v-valor').value=v.valor;
-  document.getElementById('v-resp').value=v.responsavel_id||'';
+  document.getElementById('v-resp').value=v.responsavel_nome||'';
   document.getElementById('v-etapa').value=v.etapa;
   document.getElementById('v-data').value=v.data_proposta||'';
   document.getElementById('v-obs').value=v.observacoes||'';
@@ -1172,10 +1172,10 @@ async function salvarVenda(){
 
   if(VENDA_ATIVA){
     // atualizar
-    await SB.from('vendas').update({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_id:rid||null,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).eq('id',VENDA_ATIVA);
+    await SB.from('vendas').update({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).eq('id',VENDA_ATIVA);
     await log('Venda',`Venda atualizada — ${cli?.nome}: ${servico}`,etapa);
   } else {
-    const{data:nova,error}=await SB.from('vendas').insert({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_id:rid||null,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).select().single();
+    const{data:nova,error}=await SB.from('vendas').insert({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).select().single();
     if(error){alert('Erro: '+error.message);return;}
     VENDA_ATIVA=nova.id;
     document.getElementById('modal-venda-titulo').textContent='Detalhes da venda';
@@ -2044,7 +2044,7 @@ async function executarContratacao(){
     servico:      o.titulo,
     valor:        o.valor_total,
     etapa:        'Fechado',
-    responsavel_id:   respId||null,
+    
     responsavel_nome: respNome,
     data_proposta:    hoje(),
     observacoes:  `Gerado automaticamente a partir da proposta Nº ${String(o.numero).padStart(5,'0')}.\n${o.cond_pagto||''}`,
