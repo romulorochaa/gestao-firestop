@@ -588,11 +588,70 @@ tr:hover td{background:var(--surface2)}
 <!-- LANÇAMENTO -->
 <div class="overlay" id="modal-lancamento">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Novo lançamento</div><button class="close-btn" onclick="closeModal('modal-lancamento')">×</button></div>
-    <div class="frow"><div class="fg"><label>Tipo *</label><select id="l-tipo"><option>Receita</option><option>Despesa</option></select></div><div class="fg"><label>Data *</label><input id="l-data" type="date"></div></div>
-    <div class="frow"><div class="fg"><label>Descrição *</label><input id="l-desc" placeholder="Ex: Pagamento contrato"></div><div class="fg"><label>Valor (R$) *</label><input id="l-valor" type="number" min="0" placeholder="0,00"></div></div>
-    <div class="frow"><div class="fg"><label>Cliente / Fornecedor</label><input id="l-origem" placeholder="Nome"></div><div class="fg"><label>Status</label><select id="l-status"><option>Confirmado</option><option>Pendente</option></select></div></div>
-    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-lancamento')">Cancelar</button><button class="btn btn-primary" onclick="salvarLancamento()">Salvar lançamento</button></div>
+    <div class="modal-header">
+      <div class="modal-title" id="lanc-modal-titulo">Novo lançamento</div>
+      <button class="close-btn" onclick="closeModal('modal-lancamento')">×</button>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>Tipo *</label>
+        <select id="l-tipo" onchange="lancTipoChange()">
+          <option value="Receita">Receita</option>
+          <option value="Despesa">Despesa</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Data *</label>
+        <input id="l-data" type="date">
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select id="l-status"><option value="Confirmado">Pago / Confirmado</option><option value="Pendente">Pendente</option></select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>Descrição *</label>
+        <input id="l-desc" placeholder="Ex: CREA, Combustível, Material elétrico...">
+      </div>
+      <div class="fg" style="max-width:160px">
+        <label>Valor (R$) *</label>
+        <input id="l-valor" type="number" min="0" step="0.01" placeholder="0,00">
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>Categoria</label>
+        <select id="l-categoria">
+          <option value="">— Selecione —</option>
+          <optgroup label="Despesas" id="l-cat-despesas">
+            <option value="Material">Material</option>
+            <option value="Mão de obra">Mão de obra</option>
+            <option value="ART">ART</option>
+            <option value="Impostos">Impostos</option>
+            <option value="Operacional">Operacional</option>
+            <option value="Aluguel">Aluguel</option>
+            <option value="Contabilidade">Contabilidade</option>
+            <option value="Investimentos">Investimentos</option>
+            <option value="Terceiros">Terceiros</option>
+            <option value="Retirada">Retirada</option>
+            <option value="Outros">Outros</option>
+          </optgroup>
+          <optgroup label="Receitas" id="l-cat-receitas" style="display:none">
+            <option value="Venda de serviços">Venda de serviços</option>
+            <option value="Outros">Outros</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Cliente / Obra / Fornecedor</label>
+        <input id="l-origem" placeholder="Ex: Condomínio Alfredo Volpi, Escritório...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-lancamento')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarLancamento()">Salvar lançamento</button>
+    </div>
   </div>
 </div>
 
@@ -1384,8 +1443,19 @@ async function renderFinanceiro(){
   }));
   const todos=[...(lanc||[]),...parcelasComoLanc].sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
 
-  const tplRow=(l)=>`<tr><td>${fmtData(l.data_lancamento)}</td><td><span class="badge ${l.tipo==='Receita'?'b-green':'b-red'}">${l.tipo}</span></td><td>${l.descricao}</td><td>${l.origem||'—'}</td><td style="font-weight:500;color:${l.tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${l.tipo==='Receita'?'+':'-'}${fmt(l.valor)}</td><td>${badge(l.status)}</td>${podeExcluir()&&!l._parcela?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:(podeExcluir()?'<td></td>':'')}</tr>`;
-  const thead=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Origem</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>`;
+  const tplRow=(l)=>{
+    const catBadge=l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—';
+    return`<tr>
+      <td>${fmtData(l.data_lancamento)}</td>
+      <td><span class="badge ${l.tipo==='Receita'?'b-green':'b-red'}">${l.tipo}</span></td>
+      <td>${l.descricao}<br>${catBadge}</td>
+      <td style="font-size:12px;color:var(--text2)">${l.origem||'—'}</td>
+      <td style="font-weight:500;color:${l.tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${l.tipo==='Receita'?'+':'-'}${fmt(l.valor)}</td>
+      <td>${badge(l.status)}</td>
+      ${podeExcluir()&&!l._parcela?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:(podeExcluir()?'<td></td>':'')}
+    </tr>`;
+  };
+  const thead=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição / Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>`;
 
   document.getElementById('tabela-lanc').innerHTML=todos.length?thead+todos.map(tplRow).join('')+'</table>':'<div class="empty">Nenhum lançamento ainda.</div>';
   renderParcelasFinanceiro(parc);
@@ -1431,12 +1501,54 @@ async function marcarRecebidoFin(parcelaId){
 
 async function renderLancFiltro(tipo){
   const{data}=await SB.from('lancamentos').select('*').eq('tipo',tipo).order('data_lancamento',{ascending:false});
-  const tpl=(lista)=>{
-    if(!lista||!lista.length)return`<div class="empty">Nenhum lançamento de ${tipo.toLowerCase()} ainda.</div>`;
-    return`<table><tr><th>Data</th><th>Descrição</th><th>Origem</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
-    ${lista.map(l=>`<tr><td>${fmtData(l.data_lancamento)}</td><td>${l.descricao}</td><td>${l.origem||'—'}</td><td style="font-weight:500;color:${tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${fmt(l.valor)}</td><td>${badge(l.status)}</td>${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:''}</tr>`).join('')}</table>`;
-  };
-  document.getElementById(tipo==='Receita'?'tabela-lanc-rec':'tabela-lanc-des').innerHTML=tpl(data);
+  const lista=data||[];
+  const el=document.getElementById(tipo==='Receita'?'tabela-lanc-rec':'tabela-lanc-des');
+  if(!lista.length){el.innerHTML=`<div class="empty">Nenhum lançamento de ${tipo.toLowerCase()} ainda.</div>`;return;}
+
+  // Para despesas: mostra totais por categoria no topo
+  let resumoHtml='';
+  if(tipo==='Despesa'){
+    const CATS=['Material','Mão de obra','ART','Impostos','Operacional','Aluguel','Contabilidade','Investimentos','Terceiros','Retirada','Outros'];
+    const totais={};
+    lista.filter(l=>l.status==='Confirmado').forEach(l=>{
+      const c=l.categoria||'Outros';
+      totais[c]=(totais[c]||0)+Number(l.valor);
+    });
+    const cats=CATS.filter(c=>totais[c]>0);
+    if(cats.length){
+      resumoHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
+        ${cats.map(c=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
+          <span style="color:var(--text2)">${c}</span>
+          <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totais[c])}</strong>
+        </div>`).join('')}
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--red-bg);border:0.5px solid #f5c0bc;border-radius:20px;font-size:12px">
+          <span style="color:var(--text2)">Total</span>
+          <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(cats.reduce((s,c)=>s+totais[c],0))}</strong>
+        </div>
+      </div>`;
+    }
+  }
+
+  const tabela=`<table>
+    <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
+    ${lista.map(l=>`<tr>
+      <td>${fmtData(l.data_lancamento)}</td>
+      <td>${l.descricao}</td>
+      <td>${l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${l.origem||'—'}</td>
+      <td style="font-weight:500;color:${tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${fmt(l.valor)}</td>
+      <td>${badge(l.status)}</td>
+      ${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:''}
+    </tr>`).join('')}
+  </table>`;
+  el.innerHTML=resumoHtml+tabela;
+}
+
+function lancTipoChange(){
+  const tipo=document.getElementById('l-tipo').value;
+  document.getElementById('l-cat-despesas').style.display=tipo==='Despesa'?'':'none';
+  document.getElementById('l-cat-receitas').style.display=tipo==='Receita'?'':'none';
+  document.getElementById('l-categoria').value='';
 }
 
 async function salvarLancamento(){
@@ -1444,13 +1556,23 @@ async function salvarLancamento(){
   const desc=document.getElementById('l-desc').value.trim();
   const valor=document.getElementById('l-valor').value;
   if(!desc||!valor){alert('Preencha descrição e valor.');return;}
-  const tipo=document.getElementById('l-tipo').value;
-  const status=document.getElementById('l-status').value;
-  const{error}=await SB.from('lancamentos').insert({tipo,descricao:desc,valor:Number(valor),data_lancamento:document.getElementById('l-data').value||hoje(),origem:document.getElementById('l-origem').value,status});
+  const tipo    = document.getElementById('l-tipo').value;
+  const status  = document.getElementById('l-status').value;
+  const categ   = document.getElementById('l-categoria').value;
+  const origem  = document.getElementById('l-origem').value;
+  const{error}=await SB.from('lancamentos').insert({
+    tipo, descricao:desc,
+    valor:Number(valor),
+    data_lancamento:document.getElementById('l-data').value||hoje(),
+    origem,
+    categoria:categ||null,
+    status,
+  });
   if(error){alert('Erro: '+error.message);return;}
   closeModal('modal-lancamento');
   ['l-desc','l-valor','l-origem'].forEach(id=>document.getElementById(id).value='');
-  await log('Financeiro',`${tipo}: ${desc} — ${fmt(valor)}`,status);
+  document.getElementById('l-categoria').value='';
+  log('Financeiro',`${tipo}${categ?' ('+categ+')':''}: ${desc} — ${fmt(valor)}`,status);
   renderFinanceiro();renderDashboard();
 }
 
