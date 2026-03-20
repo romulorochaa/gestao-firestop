@@ -1433,8 +1433,7 @@ async function salvarOrcamento(){
     document.getElementById('orc-modal-titulo').textContent=`Proposta Nº ${String(novo.numero).padStart(5,'0')}`;
     ['orc-alerta-itens','orc-alerta-cond','orc-alerta-preview'].forEach(id=>document.getElementById(id).style.display='none');
     ['orc-itens-conteudo','orc-cond-conteudo','orc-preview-conteudo'].forEach(id=>document.getElementById(id).style.display='block');
-    document.getElementById('item-num').value='1';
-    await log('Orçamento',`Nova proposta Nº ${novo.numero} — ${cli.nome}: ${titulo}`,payload.status);
+    log('Orçamento',`Nova proposta Nº ${novo.numero} — ${cli.nome}: ${titulo}`,payload.status);
   }
   renderOrcamentos();
   renderItensOrc();
@@ -1452,23 +1451,28 @@ async function adicionarItem(){
   const desc=document.getElementById('item-desc').value.trim();
   const qtd=parseFloat(document.getElementById('item-qtd').value||0);
   const val=parseFloat(document.getElementById('item-valor').value||0);
-  if(!desc||!qtd||!val){alert('Preencha a descrição, quantidade e valor.');return;}
-  const num=parseInt(document.getElementById('item-num').value||_itensOrc.length+1);
+  if(!desc){alert('Informe a descrição do produto/serviço.');return;}
+  if(!qtd||!val){alert('Informe a quantidade e o valor unitário.');return;}
+  const num=_itensOrc.length+1;
   const{data,error}=await SB.from('itens_orcamento').insert({
-    orcamento_id:ORC_ATIVO,numero_item:num,descricao:desc,
-    quantidade:qtd,valor_unitario:val,valor_total:parseFloat((qtd*val).toFixed(2)),
-    prazo_dias:parseInt(document.getElementById('item-prazo').value||0),
+    orcamento_id:ORC_ATIVO,
+    numero_item:num,
+    descricao:desc,
+    quantidade:qtd,
+    valor_unitario:val,
+    valor_total:parseFloat((qtd*val).toFixed(2)),
+    prazo_dias:parseInt(document.getElementById('item-prazo')?.value||0),
     status_execucao:'Pendente'
   }).select().single();
-  if(error){alert('Erro: '+error.message);return;}
+  if(error){alert('Erro ao salvar item: '+error.message);return;}
   _itensOrc.push(data);
   _itensOrc.sort((a,b)=>a.numero_item-b.numero_item);
+  // Limpa o formulário
   document.getElementById('item-desc').value='';
   document.getElementById('item-qtd').value='1';
   document.getElementById('item-valor').value='';
   document.getElementById('item-total-preview').value='R$ 0,00';
-  document.getElementById('item-prazo').value='';
-  document.getElementById('item-num').value=_itensOrc.length+1;
+  if(document.getElementById('item-prazo')) document.getElementById('item-prazo').value='0';
   await _recalcOrcDB();
   renderItensOrc();
 }
@@ -1478,7 +1482,6 @@ async function removerItem(id){
   await SB.from('itens_orcamento').delete().eq('id',id);
   _itensOrc=_itensOrc.filter(i=>i.id!==id);
   _itensOrc.forEach((it,idx)=>it.numero_item=idx+1);
-  document.getElementById('item-num').value=_itensOrc.length+1;
   await _recalcOrcDB();
   renderItensOrc();
 }
