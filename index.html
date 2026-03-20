@@ -218,6 +218,21 @@ tr:hover td{background:var(--surface2)}
       <h1>GestãoPRO</h1>
     </div>
     <div class="topbar-right">
+      <!-- Sino de notificações -->
+      <div style="position:relative">
+        <button onclick="toggleNotificacoes()" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:var(--r);position:relative;color:var(--text2);transition:background .15s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'" title="Notificações">
+          <span style="font-size:20px">🔔</span>
+          <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;width:16px;height:16px;background:var(--red);color:#fff;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1"></span>
+        </button>
+        <!-- Painel de notificações -->
+        <div id="notif-painel" style="display:none;position:absolute;right:0;top:44px;width:360px;max-height:480px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r2);box-shadow:0 8px 32px rgba(0,0,0,.12);z-index:300;overflow:hidden">
+          <div style="padding:12px 16px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:14px;font-weight:600">Notificações</span>
+            <button onclick="marcarTodasLidas()" style="font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer">Marcar todas como lidas</button>
+          </div>
+          <div id="notif-lista" style="max-height:400px;overflow-y:auto"></div>
+        </div>
+      </div>
       <div class="user-chip"><strong id="user-nome">—</strong><span class="nivel-badge" id="user-nivel-badge"></span></div>
       <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
@@ -862,6 +877,8 @@ const isAdmin = () => true;
   const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   document.getElementById('data-hoje').textContent=`${dias[n.getDay()]}, ${n.getDate()} de ${meses[n.getMonth()]} de ${n.getFullYear()}`;
   renderDashboard();
+  // Carrega notificações ao iniciar
+  setTimeout(carregarNotificacoes, 1500);
 })();
 
 function sair(){ location.reload(); }
@@ -2461,15 +2478,19 @@ async function editarItemGantt(id){
 }
 
 async function salvarItemGantt(id){
-  const status   = document.getElementById(`ge-status-${id}`).value;
-  const progresso= parseInt(document.getElementById(`ge-prog-${id}`).value||0);
-  const ini      = document.getElementById(`ge-ini-${id}`).value;
-  const fim      = document.getElementById(`ge-fim-${id}`).value;
-  const resp     = document.getElementById(`ge-resp-${id}`).value;
+  let status   = document.getElementById(`ge-status-${id}`).value;
+  let progresso= parseInt(document.getElementById(`ge-prog-${id}`).value||0);
+  const ini    = document.getElementById(`ge-ini-${id}`).value;
+  const fim    = document.getElementById(`ge-fim-${id}`).value;
+  const resp   = document.getElementById(`ge-resp-${id}`).value;
+
+  // Auto-status: 100% → Concluído / >0% e Pendente → Em andamento
+  if(progresso===100) status='Concluído';
+  else if(progresso>0 && status==='Pendente') status='Em andamento';
 
   const{error}=await SB.from('itens_orcamento').update({
-    status_execucao:    status,
-    progresso:          progresso,
+    status_execucao:      status,
+    progresso:            progresso,
     data_inicio_prevista: ini||null,
     data_fim_prevista:    fim||null,
     responsavel_execucao: resp||null,
@@ -2482,10 +2503,19 @@ async function salvarItemGantt(id){
   if(idx>=0) _ganttItens[idx]={..._ganttItens[idx],status_execucao:status,progresso,
     data_inicio_prevista:ini||null,data_fim_prevista:fim||null,responsavel_execucao:resp||null};
 
-  log('Gantt',`Item ${String(_ganttItens[idx]?.numero_item).padStart(2,'0')} atualizado — ${status} ${progresso}%`,status);
+  // Verifica se todos os itens estão concluídos
+  const todosOk=_ganttItens.every(i=>i.status_execucao==='Concluído'||Number(i.progresso||0)===100);
+  if(todosOk && _ganttItens.length>0){
+    // Notifica conclusão da obra
+    mostrarNotificacao('✅ Obra concluída!',`Todos os itens de "${_ganttOrc?.titulo||'obra'}" foram concluídos.`,'green');
+  }
+
+  log('Gantt',`Item ${String(_ganttItens[idx]?.numero_item||0).padStart(2,'0')} atualizado — ${status} ${progresso}%`,status);
   renderGanttMetricas();
   renderGanttChart();
   renderGanttTabela();
+  // Atualiza notificações
+  carregarNotificacoes();
 }
 
 // ── CONFIGURAR DATAS (modal em lote) ─────────────────────────
@@ -2533,7 +2563,7 @@ function renderComentarios(lista){
   el.innerHTML=lista.map(c=>`
     <div style="padding:10px 14px;background:${c.tipo_usuario==='cliente'?'var(--blue-bg)':'var(--surface2)'};border-radius:var(--r);margin-bottom:8px;border-left:3px solid ${c.tipo_usuario==='cliente'?'var(--blue)':'var(--border2)'}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <strong style="font-size:12px">${c.autor||'Firestop'}</strong>
+        <strong style="font-size:12px">${c.tipo_usuario==='cliente'?'👤 '+c.autor:'🧯 Firestop Engenharia'}</strong>
         <span style="font-size:11px;color:var(--text3)">${fmtData(c.criado_em?.split('T')[0])} ${c.criado_em?.split('T')[1]?.slice(0,5)||''}</span>
       </div>
       <div style="font-size:13px;line-height:1.5;white-space:pre-wrap">${c.texto}</div>
@@ -2555,6 +2585,7 @@ async function enviarComentario(){
   // Recarrega comentários
   const{data}=await SB.from('gantt_comentarios').select('*').eq('orcamento_id',_ganttOrcId).order('criado_em');
   renderComentarios(data||[]);
+  carregarNotificacoes();
 }
 // ── FIM GANTT ─────────────────────────────────────────────────
 
@@ -2583,11 +2614,290 @@ async function salvarEIrParaItens(){
   if(ORC_ATIVO) setTimeout(()=>orcIrParaAba('orc-tab-itens','orc-pane-itens'), 300);
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// ── SISTEMA DE NOTIFICAÇÕES ───────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+let _notifs = []; // cache local
+const NOTIF_KEY = 'firestop_notifs_lidas'; // IDs já lidos no localStorage
+
+function getNotifLidas(){
+  try{ return JSON.parse(localStorage.getItem(NOTIF_KEY)||'[]'); }catch{ return []; }
+}
+function marcarLida(id){
+  const lidas=getNotifLidas();
+  if(!lidas.includes(id)){ lidas.push(id); localStorage.setItem(NOTIF_KEY,JSON.stringify(lidas)); }
+}
+function marcarTodasLidas(){
+  const ids=_notifs.map(n=>n.id);
+  localStorage.setItem(NOTIF_KEY,JSON.stringify(ids));
+  renderNotifLista();
+  atualizarBadge();
+}
+
+function toggleNotificacoes(){
+  const p=document.getElementById('notif-painel');
+  const aberto=p.style.display!=='none';
+  p.style.display=aberto?'none':'block';
+  if(!aberto){ renderNotifLista(); atualizarBadge(); }
+  // Fecha ao clicar fora
+  if(!aberto){
+    setTimeout(()=>{
+      document.addEventListener('click', function fechar(e){
+        if(!document.getElementById('notif-painel')?.contains(e.target) && !e.target.closest('[onclick*="toggleNotificacoes"]')){
+          document.getElementById('notif-painel').style.display='none';
+          document.removeEventListener('click',fechar);
+        }
+      });
+    },0);
+  }
+}
+
+async function carregarNotificacoes(){
+  const notifs = [];
+  const agora  = new Date();
+  const hoje_d = new Date(hoje()+'T00:00:00');
+
+  // ── 1. OBRAS COM PRAZO PRÓXIMO OU ATRASADO ────────────────
+  const{data:obras}=await SB.from('orcamentos')
+    .select('id,numero,titulo,cliente_nome').eq('status','Aprovado');
+  if(obras?.length){
+    const obraIds=obras.map(o=>o.id);
+    const{data:itens}=await SB.from('itens_orcamento')
+      .select('orcamento_id,data_fim_prevista,status_execucao,progresso')
+      .in('orcamento_id',obraIds);
+    obras.forEach(o=>{
+      const its=(itens||[]).filter(i=>i.orcamento_id===o.id);
+      const totalItens=its.length;
+      if(!totalItens) return;
+      const todosOk=its.every(i=>i.status_execucao==='Concluído'||Number(i.progresso||0)===100);
+      if(todosOk) return; // obra concluída, sem alerta de prazo
+      const datas=its.filter(i=>i.data_fim_prevista).map(i=>new Date(i.data_fim_prevista+'T00:00:00').getTime());
+      if(!datas.length) return;
+      const prazoFinal=new Date(Math.max(...datas));
+      const dias=Math.ceil((prazoFinal-hoje_d)/86400000);
+      const nId=`obra-prazo-${o.id}`;
+      if(dias<0){
+        notifs.push({id:nId,tipo:'erro',icone:'🚨',titulo:'Obra atrasada',
+          texto:`${o.cliente_nome} — ${o.titulo}: prazo encerrado há ${Math.abs(dias)} dia(s).`,
+          acao:()=>{ showPage('gantt',document.querySelector('[onclick*="gantt"]')); setTimeout(()=>abrirDetalheObra(o.id),300); }
+        });
+      } else if(dias<=3){
+        notifs.push({id:nId,tipo:'erro',icone:'⚠️',titulo:'Prazo crítico',
+          texto:`${o.cliente_nome} — ${o.titulo}: ${dias} dia(s) restante(s)!`,
+          acao:()=>{ showPage('gantt',document.querySelector('[onclick*="gantt"]')); setTimeout(()=>abrirDetalheObra(o.id),300); }
+        });
+      } else if(dias<=7){
+        notifs.push({id:nId,tipo:'alerta',icone:'⏰',titulo:'Prazo próximo',
+          texto:`${o.cliente_nome} — ${o.titulo}: ${dias} dia(s) restantes.`,
+          acao:()=>{ showPage('gantt',document.querySelector('[onclick*="gantt"]')); setTimeout(()=>abrirDetalheObra(o.id),300); }
+        });
+      }
+    });
+  }
+
+  // ── 2. NOVAS MENSAGENS DE CLIENTES ───────────────────────
+  const{data:msgs}=await SB.from('gantt_comentarios')
+    .select('id,orcamento_id,autor,texto,criado_em')
+    .eq('tipo_usuario','cliente')
+    .order('criado_em',{ascending:false})
+    .limit(20);
+  if(msgs?.length){
+    // Agrupa por obra
+    const porObra={};
+    msgs.forEach(m=>{
+      if(!porObra[m.orcamento_id]) porObra[m.orcamento_id]=[];
+      porObra[m.orcamento_id].push(m);
+    });
+    for(const [orcId,mList] of Object.entries(porObra)){
+      const orc=obras?.find(o=>o.id===orcId);
+      const nome=orc?orc.cliente_nome:'Cliente';
+      const nId=`msg-cliente-${orcId}-${mList[0].id}`;
+      const qtd=mList.length;
+      notifs.push({id:nId,tipo:'info',icone:'💬',
+        titulo:`${qtd>1?qtd+' mensagens':'Mensagem'} de cliente`,
+        texto:`${nome}: "${mList[0].texto.slice(0,60)}${mList[0].texto.length>60?'...':''}"`,
+        data:mList[0].criado_em,
+        acao:()=>{ showPage('gantt',document.querySelector('[onclick*="gantt"]')); setTimeout(()=>abrirDetalheObra(orcId),300); }
+      });
+    }
+  }
+
+  // ── 3. PARCELAS VENCIDAS ──────────────────────────────────
+  const{data:parcVenc}=await SB.from('parcelas')
+    .select('id,cliente_nome,venda_servico,valor,data_vencimento')
+    .eq('status','Pendente')
+    .lt('data_vencimento',hoje());
+  if(parcVenc?.length){
+    const total=parcVenc.reduce((s,p)=>s+Number(p.valor||0),0);
+    notifs.push({id:`parcelas-vencidas-${parcVenc.length}`,tipo:'erro',icone:'💰',
+      titulo:`${parcVenc.length} parcela(s) vencida(s)`,
+      texto:`Total em atraso: ${fmt(total)}`,
+      acao:()=>showPage('financeiro',document.querySelector('[onclick*="financeiro"]'))
+    });
+  }
+
+  // ── 4. PARCELAS VENCENDO EM ATÉ 3 DIAS ───────────────────
+  const d3=new Date(hoje_d.getTime()+3*86400000).toISOString().split('T')[0];
+  const{data:parcProx}=await SB.from('parcelas')
+    .select('id,cliente_nome,valor,data_vencimento')
+    .eq('status','Pendente')
+    .gte('data_vencimento',hoje())
+    .lte('data_vencimento',d3);
+  if(parcProx?.length){
+    const total=parcProx.reduce((s,p)=>s+Number(p.valor||0),0);
+    notifs.push({id:`parcelas-proximas-${d3}`,tipo:'alerta',icone:'📅',
+      titulo:`${parcProx.length} parcela(s) vencem em 3 dias`,
+      texto:`Total: ${fmt(total)}`,
+      acao:()=>showPage('financeiro',document.querySelector('[onclick*="financeiro"]'))
+    });
+  }
+
+  // ── 5. PROCESSOS CB COM PRAZO PRÓXIMO ────────────────────
+  const{data:procs}=await SB.from('processos_cb')
+    .select('id,cliente_nome,tipo,prazo,etapa')
+    .neq('etapa','AVCB emitido');
+  if(procs?.length){
+    procs.forEach(p=>{
+      if(!p.prazo) return;
+      const dias=diasAte(p.prazo);
+      if(dias===null) return;
+      const nId=`cb-prazo-${p.id}`;
+      if(dias<0){
+        notifs.push({id:nId,tipo:'erro',icone:'🚒',titulo:'AVCB/CB vencido',
+          texto:`${p.cliente_nome} — ${p.tipo}: vencido há ${Math.abs(dias)} dia(s).`,
+          acao:()=>showPage('bombeiros',document.querySelector('[onclick*="bombeiros"]'))
+        });
+      } else if(dias<=7){
+        notifs.push({id:nId,tipo:'alerta',icone:'🚒',titulo:'Prazo CB próximo',
+          texto:`${p.cliente_nome} — ${p.tipo}: ${dias} dia(s) restantes.`,
+          acao:()=>showPage('bombeiros',document.querySelector('[onclick*="bombeiros"]'))
+        });
+      }
+    });
+  }
+
+  // ── 6. PROPOSTAS COM VALIDADE VENCENDO ───────────────────
+  const{data:props}=await SB.from('orcamentos')
+    .select('id,numero,titulo,cliente_nome,data_emissao,validade_dias')
+    .in('status',['Rascunho','Enviado']);
+  if(props?.length){
+    props.forEach(o=>{
+      if(!o.data_emissao||!o.validade_dias) return;
+      const vencD=new Date(new Date(o.data_emissao+'T12:00:00').getTime()+o.validade_dias*86400000).toISOString().split('T')[0];
+      const dias=diasAte(vencD);
+      if(dias===null) return;
+      const nId=`prop-venc-${o.id}`;
+      if(dias<0){
+        notifs.push({id:nId,tipo:'alerta',icone:'📄',titulo:'Proposta vencida',
+          texto:`Nº ${String(o.numero).padStart(5,'0')} — ${o.cliente_nome}: validade expirada.`,
+          acao:()=>showPage('orcamentos',document.querySelector('[onclick*="orcamentos"]'))
+        });
+      } else if(dias<=3){
+        notifs.push({id:nId,tipo:'alerta',icone:'📄',titulo:'Proposta vence em breve',
+          texto:`Nº ${String(o.numero).padStart(5,'0')} — ${o.cliente_nome}: ${dias} dia(s).`,
+          acao:()=>showPage('orcamentos',document.querySelector('[onclick*="orcamentos"]'))
+        });
+      }
+    });
+  }
+
+  _notifs = notifs;
+  atualizarBadge();
+}
+
+function atualizarBadge(){
+  const lidas=getNotifLidas();
+  const naoLidas=_notifs.filter(n=>!lidas.includes(n.id)).length;
+  const badge=document.getElementById('notif-badge');
+  if(!badge) return;
+  if(naoLidas>0){
+    badge.style.display='flex';
+    badge.textContent=naoLidas>9?'9+':naoLidas;
+  } else {
+    badge.style.display='none';
+  }
+}
+
+function renderNotifLista(){
+  const el=document.getElementById('notif-lista');
+  if(!el) return;
+  if(!_notifs.length){
+    el.innerHTML='<div style="padding:24px;text-align:center;font-size:13px;color:var(--text3)">Nenhuma notificação no momento ✅</div>';
+    return;
+  }
+  const lidas=getNotifLidas();
+  const COR={erro:'var(--red-bg)',alerta:'var(--amber-bg)',info:'var(--blue-bg)',green:'var(--green-bg)'};
+  const BORDA={erro:'var(--red)',alerta:'var(--amber)',info:'var(--blue)',green:'var(--green)'};
+  // Ordena: não lidas primeiro, depois por tipo (erro>alerta>info)
+  const ORDEM={erro:0,alerta:1,info:2,green:3};
+  const sorted=[..._notifs].sort((a,b)=>{
+    const aL=lidas.includes(a.id)?1:0, bL=lidas.includes(b.id)?1:0;
+    if(aL!==bL) return aL-bL;
+    return (ORDEM[a.tipo]||9)-(ORDEM[b.tipo]||9);
+  });
+  el.innerHTML=sorted.map(n=>{
+    const lida=lidas.includes(n.id);
+    return`<div onclick="clicarNotif('${n.id}')" style="
+      padding:12px 16px;border-bottom:0.5px solid var(--border);cursor:pointer;
+      background:${lida?'transparent':COR[n.tipo]||'var(--surface2)'};
+      border-left:3px solid ${lida?'transparent':BORDA[n.tipo]||'var(--border)'};
+      transition:background .15s;display:flex;gap:10px;align-items:flex-start"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${lida?'transparent':COR[n.tipo]||'var(--surface2)'}'">
+      <span style="font-size:18px;flex-shrink:0;margin-top:1px">${n.icone}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:${lida?'400':'600'};color:var(--text)">${n.titulo}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px;line-height:1.4">${n.texto}</div>
+        ${n.data?`<div style="font-size:11px;color:var(--text3);margin-top:3px">${fmtData(n.data?.split('T')[0])} ${n.data?.split('T')[1]?.slice(0,5)||''}</div>`:''}
+      </div>
+      ${!lida?`<span style="width:8px;height:8px;border-radius:50%;background:${BORDA[n.tipo]||'var(--blue)'};flex-shrink:0;margin-top:5px"></span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function clicarNotif(id){
+  marcarLida(id);
+  const n=_notifs.find(x=>x.id===id);
+  document.getElementById('notif-painel').style.display='none';
+  renderNotifLista();
+  atualizarBadge();
+  if(n?.acao) n.acao();
+}
+
+function mostrarNotificacao(titulo, texto, tipo='info'){
+  // Toast flutuante temporário
+  const toast=document.createElement('div');
+  const COR={green:'var(--green-bg)',info:'var(--blue-bg)',erro:'var(--red-bg)',alerta:'var(--amber-bg)'};
+  const BC={green:'var(--green)',info:'var(--blue)',erro:'var(--red)',alerta:'var(--amber)'};
+  toast.style.cssText=`position:fixed;bottom:24px;right:24px;z-index:9999;
+    background:${COR[tipo]||'var(--surface)'};border:0.5px solid ${BC[tipo]||'var(--border)'};
+    border-left:4px solid ${BC[tipo]||'var(--border)'};
+    border-radius:var(--r2);padding:14px 18px;max-width:320px;
+    box-shadow:0 4px 20px rgba(0,0,0,.12);
+    animation:slideIn .3s ease;font-family:'DM Sans',sans-serif`;
+  toast.innerHTML=`
+    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${titulo}</div>
+    <div style="font-size:12px;color:var(--text2)">${texto}</div>`;
+  document.body.appendChild(toast);
+  // Adiciona animação
+  const style=document.createElement('style');
+  style.textContent='@keyframes slideIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}';
+  document.head.appendChild(style);
+  setTimeout(()=>{toast.style.transition='opacity .4s,transform .4s';toast.style.opacity='0';toast.style.transform='translateX(120%)';setTimeout(()=>toast.remove(),400);},4000);
+  // Atualiza lista também
+  setTimeout(carregarNotificacoes, 500);
+}
+// ── FIM NOTIFICAÇÕES ──────────────────────────────────────────
+
 // ── INIT ──────────────────────────────────────────────────────
 document.getElementById('l-data').value=hoje();
 document.getElementById('v-data').value=hoje();
 document.getElementById('p-inicio').value=hoje();
 document.getElementById('login-senha').addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+// Carrega notificações ao iniciar e a cada 2 minutos
+setTimeout(carregarNotificacoes, 1500);
+setInterval(carregarNotificacoes, 120000);
 </script>
 </body>
 </html>

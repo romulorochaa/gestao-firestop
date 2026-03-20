@@ -183,7 +183,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="card-title">Firestop Engenharia</div>
       <div style="font-size:13px;color:var(--text2);display:flex;flex-direction:column;gap:8px">
         <div>📞 <a href="tel:+558499349353" style="color:var(--red);text-decoration:none">(84) 99934-9353</a></div>
-        <div>✉️ <a href="mailto:firestopengenharia@gmail.com" style="color:var(--red);text-decoration:none">firestopengenharia@gmail.com</a></div>
+        <div>✉️ <a href="/cdn-cgi/l/email-protection#62040b100711160d12070c05070c0a03100b0322050f030b0e4c010d0f" style="color:var(--red);text-decoration:none"><span class="__cf_email__" data-cfemail="2c4a455e495f58435c49424b4942444d5e454d6c4b414d4540024f4341">[email&#160;protected]</span></a></div>
         <div style="font-size:12px;color:var(--text3);margin-top:4px">CNPJ: 41.465.438/0001-22</div>
       </div>
     </div>
@@ -204,7 +204,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div style="margin-top:8px;font-size:13px;color:var(--text3)">(84) 99934-9353</div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 const{createClient}=supabase;
 const SB=createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl');
 
@@ -357,7 +357,7 @@ function renderComentariosCliente(lista){
   el.innerHTML=lista.map(c=>`
     <div class="comentario ${c.tipo_usuario==='cliente'?'cliente':'interno'}">
       <div class="comentario-autor" style="color:${c.tipo_usuario==='cliente'?'var(--blue)':'var(--text)'}">
-        ${c.tipo_usuario==='cliente'?'👤 '+c.autor:'🔧 Firestop Engenharia'}
+        ${c.tipo_usuario==='cliente'?'👤 '+c.autor:'🧯 Firestop Engenharia'}
       </div>
       <div class="comentario-texto">${c.texto}</div>
       <div class="comentario-data">${fmtData(c.criado_em?.split('T')[0])} às ${c.criado_em?.split('T')[1]?.slice(0,5)||''}</div>
@@ -384,12 +384,4 @@ async function enviarComentarioCliente(){
     btn.disabled=false;btn.textContent='Enviar mensagem';
     return;
   }
-  document.getElementById('c-texto-cliente').value='';
-  btn.disabled=false;btn.textContent='Enviar mensagem';
-  // Recarrega comentários
-  const{data}=await SB.from('gantt_comentarios').select('*').eq('orcamento_id',ORC_ID).order('criado_em');
-  renderComentariosCliente(data||[]);
-}
-</script>
-</body>
-</html>
+  document.getElementById('c-texto-cliente').value=
