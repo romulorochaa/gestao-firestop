@@ -652,20 +652,9 @@ const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishab
 
 let USER=null,PERFIL=null,VENDA_ATIVA=null,ORC_ATIVO=null;
 
-// Splash de carregamento enquanto verifica sessão salva
+// Splash inicial
 document.getElementById('login-wrap').style.display='none';
 document.body.insertAdjacentHTML('afterbegin',`<div id="splash" style="position:fixed;inset:0;background:#f6f5f2;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px"><div style="width:44px;height:44px;background:#1a5fb4;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px">G</div><div style="font-size:13px;color:#9e9b94">Verificando sessão...</div><div style="width:28px;height:28px;border:2px solid #e2e0db;border-top-color:#1a5fb4;border-radius:50%;animation:spin .7s linear infinite"></div></div>`);
-
-// Verifica se já existe sessão salva no navegador
-(async()=>{
-  const{data:{session}}=await SB.auth.getSession();
-  if(session?.user){
-    await iniciarApp(session.user);
-  } else {
-    document.getElementById('splash').remove();
-    document.getElementById('login-wrap').style.display='flex';
-  }
-})();
 const ETAPAS_CB = ['Levantamento e projeto','Protocolo no CB','Pagamento de taxas','Análise técnica','Aguardando vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
 
 const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -696,10 +685,17 @@ async function entrar(){
   const btn=document.getElementById('btn-entrar');
   err.style.display='none';
   if(!email||!senha){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
-  btn.disabled=true;btn.textContent='Entrando...';
-  const {data,error}=await SB.auth.signInWithPassword({email,password:senha});
-  if(error){err.textContent='E-mail ou senha incorretos.';err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
-  await iniciarApp(data.user);
+  btn.disabled=true; btn.textContent='Entrando...';
+  const{data,error}=await SB.auth.signInWithPassword({email,password:senha});
+  if(error){
+    err.textContent='E-mail ou senha incorretos.';
+    err.style.display='block';
+    btn.disabled=false; btn.textContent='Entrar';
+    return;
+  }
+  // onAuthStateChange(SIGNED_IN) vai chamar iniciarApp automaticamente
+  // Mas chamamos também direto para garantir resposta imediata
+  if(data.user) await iniciarApp(data.user);
 }
 
 async function iniciarApp(user){
@@ -728,35 +724,48 @@ async function iniciarApp(user){
 }
 
 async function sair(){
+  USER=null;PERFIL=null;VENDA_ATIVA=null;ORC_ATIVO=null;
   await SB.auth.signOut();
-  USER=null;PERFIL=null;VENDA_ATIVA=null;
   document.getElementById('app').classList.remove('visible');
   document.getElementById('login-wrap').style.display='flex';
   document.getElementById('btn-entrar').disabled=false;
   document.getElementById('btn-entrar').textContent='Entrar';
 }
 
-// Verifica sessão salva ao abrir — remove splash e decide o que mostrar
-(async()=>{
-  const{data:{session}}=await SB.auth.getSession();
+// ── SESSÃO — ponto único de entrada ───────────────────────────
+// onAuthStateChange é o único responsável por iniciar/encerrar o app.
+// Ele dispara INITIAL_SESSION ao carregar (com ou sem sessão salva),
+// então não precisamos chamar getSession() separadamente.
+SB.auth.onAuthStateChange(async(event, session)=>{
   const splash=document.getElementById('splash');
-  if(session?.user){
+  if(event==='INITIAL_SESSION'){
+    // Primeiro disparo — sempre ocorre ao carregar a página
+    if(session?.user){
+      await iniciarApp(session.user);
+    } else {
+      if(splash) splash.remove();
+      document.getElementById('login-wrap').style.display='flex';
+    }
+  } else if(event==='SIGNED_IN' && !USER){
+    // Login feito em outra aba ou após confirmar e-mail
+    if(splash) splash.remove();
     await iniciarApp(session.user);
-  } else {
-    if(splash)splash.remove();
-    document.getElementById('login-wrap').style.display='flex';
-  }
-})();
-
-// Escuta mudanças de autenticação (ex: login em outra aba)
-SB.auth.onAuthStateChange(async(event,session)=>{
-  if(event==='SIGNED_IN'&&session?.user&&!USER) await iniciarApp(session.user);
-  if(event==='SIGNED_OUT'){
-    USER=null;PERFIL=null;
+  } else if(event==='SIGNED_OUT'){
+    USER=null; PERFIL=null;
     document.getElementById('app').classList.remove('visible');
     document.getElementById('login-wrap').style.display='flex';
+  } else if(event==='TOKEN_REFRESHED' && session?.user && !USER){
+    await iniciarApp(session.user);
+  }
+  // Timeout de segurança: se splash ainda existir após 8s, mostra login
+  if(splash){
+    setTimeout(()=>{
+      const s=document.getElementById('splash');
+      if(s){ s.remove(); document.getElementById('login-wrap').style.display='flex'; }
+    }, 8000);
   }
 });
+
 
 // ── NAV ──────────────────────────────────────────────────────
 function showPage(id,el){
