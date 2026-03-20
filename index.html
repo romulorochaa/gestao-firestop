@@ -627,37 +627,81 @@ tr:hover td{background:var(--surface2)}
       <div class="modal-title">Confirmar contrato</div>
       <button class="close-btn" onclick="closeModal('modal-contrato')">×</button>
     </div>
-    <div class="alert alert-green" style="margin-bottom:16px">
-      A proposta será marcada como <strong>Aprovada</strong> e uma venda será criada automaticamente com os dados do cliente e valor total.
-    </div>
+
     <!-- Resumo readonly -->
     <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:16px;font-size:13px">
       <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border)">
         <span style="color:var(--text2)">Cliente</span><strong id="ct-cliente">—</strong>
       </div>
       <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border)">
-        <span style="color:var(--text2)">Proposta</span><span id="ct-titulo">—</span>
+        <span style="color:var(--text2)">Proposta</span><span id="ct-titulo" style="text-align:right;max-width:60%">—</span>
       </div>
       <div style="display:flex;justify-content:space-between;padding:5px 0">
         <span style="color:var(--text2)">Valor total</span>
         <strong id="ct-valor" style="color:var(--blue);font-family:'DM Mono',monospace">—</strong>
       </div>
     </div>
-    <!-- Parcelamento -->
-    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px">Pagamento</div>
-    <div class="frow">
-      <div class="fg">
-        <label>Número de parcelas</label>
-        <input id="ct-parcelas" type="number" min="1" max="60" value="1" oninput="calcContratoParcela()">
-      </div>
-      <div class="fg">
-        <label>Primeiro vencimento</label>
-        <input id="ct-vencimento" type="date">
+
+    <!-- Tipo de pagamento -->
+    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px">Forma de pagamento</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;transition:border-color .15s" id="ct-tipo-label-igual">
+        <input type="radio" name="ct-tipo" value="igual" checked onchange="ctTipoPagamento()" style="margin-top:2px;accent-color:var(--blue)">
+        <div>
+          <div style="font-size:13px;font-weight:500">Parcelas iguais</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Divide o total em parcelas iguais</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:0.5px solid var(--border2);border-radius:var(--r);cursor:pointer;transition:border-color .15s" id="ct-tipo-label-entrada">
+        <input type="radio" name="ct-tipo" value="entrada" onchange="ctTipoPagamento()" style="margin-top:2px;accent-color:var(--blue)">
+        <div>
+          <div style="font-size:13px;font-weight:500">Entrada + parcelas</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Entrada personalizada + saldo parcelado</div>
+        </div>
+      </label>
+    </div>
+
+    <!-- BLOCO: Parcelas iguais -->
+    <div id="ct-bloco-igual">
+      <div class="frow">
+        <div class="fg">
+          <label>Número de parcelas</label>
+          <input id="ct-parcelas" type="number" min="1" max="60" value="1" oninput="calcContratoParcela()">
+        </div>
+        <div class="fg">
+          <label>Primeiro vencimento</label>
+          <input id="ct-vencimento" type="date" oninput="calcContratoParcela()">
+        </div>
       </div>
     </div>
-    <div id="ct-preview-parcela" style="font-size:13px;color:var(--text2);margin-bottom:14px;padding:10px 12px;background:var(--blue-bg);border-radius:var(--r);display:none">
-      — parcela(s) de —
+
+    <!-- BLOCO: Entrada + parcelas -->
+    <div id="ct-bloco-entrada" style="display:none">
+      <div class="frow">
+        <div class="fg">
+          <label>Valor da entrada (R$)</label>
+          <input id="ct-entrada-valor" type="number" min="0" step="0.01" placeholder="0,00" oninput="calcContratoParcela()">
+        </div>
+        <div class="fg">
+          <label>Data da entrada</label>
+          <input id="ct-entrada-data" type="date" oninput="calcContratoParcela()">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>Parcelas do saldo restante</label>
+          <input id="ct-parcelas-saldo" type="number" min="1" max="60" value="1" oninput="calcContratoParcela()">
+        </div>
+        <div class="fg">
+          <label>1º vencimento das parcelas</label>
+          <input id="ct-vencimento-saldo" type="date" oninput="calcContratoParcela()">
+        </div>
+      </div>
     </div>
+
+    <!-- Preview do pagamento -->
+    <div id="ct-preview-parcela" style="font-size:13px;color:var(--text2);margin-bottom:14px;padding:12px;background:var(--blue-bg);border-radius:var(--r);display:none;line-height:1.7"></div>
+
     <div class="fg">
       <label>Responsável pela venda</label>
       <select id="ct-responsavel"><option value="">Selecione (opcional)</option></select>
@@ -1981,107 +2025,125 @@ async function copiarLinkCliente(){
 }
 
 // ── CONFIRMAR CONTRATO → criar venda automaticamente ─────────
-let _orcContrato = null; // orçamento sendo contratado
+let _orcContrato = null;
+
+function ctTipoPagamento(){
+  const tipo=document.querySelector('input[name="ct-tipo"]:checked')?.value||'igual';
+  document.getElementById('ct-bloco-igual').style.display   = tipo==='igual'   ? 'block':'none';
+  document.getElementById('ct-bloco-entrada').style.display = tipo==='entrada' ? 'block':'none';
+  document.getElementById('ct-tipo-label-igual').style.borderColor   = tipo==='igual'   ? 'var(--blue)':'var(--border2)';
+  document.getElementById('ct-tipo-label-entrada').style.borderColor = tipo==='entrada' ? 'var(--blue)':'var(--border2)';
+  calcContratoParcela();
+}
+
+function calcContratoParcela(){
+  const total = Number(_orcContrato?.valor_total||0);
+  const tipo  = document.querySelector('input[name="ct-tipo"]:checked')?.value||'igual';
+  const el    = document.getElementById('ct-preview-parcela');
+  if(!total||!el){if(el)el.style.display='none';return;}
+  if(tipo==='igual'){
+    const qtd  = parseInt(document.getElementById('ct-parcelas')?.value||1);
+    const venc = document.getElementById('ct-vencimento')?.value;
+    if(!venc){el.style.display='none';return;}
+    el.style.display='block';
+    el.innerHTML=`<strong>${qtd}x de ${fmt(total/qtd)}</strong> — vencimento a partir de ${fmtData(venc)}`;
+  } else {
+    const entrada     = parseFloat(document.getElementById('ct-entrada-valor')?.value||0);
+    const dataEntrada = document.getElementById('ct-entrada-data')?.value;
+    const qtdSaldo    = parseInt(document.getElementById('ct-parcelas-saldo')?.value||1);
+    const vencSaldo   = document.getElementById('ct-vencimento-saldo')?.value;
+    const saldo       = Math.max(0,total-entrada);
+    if(!dataEntrada){el.style.display='none';return;}
+    el.style.display='block';
+    let html=`<strong>Entrada:</strong> ${fmt(entrada)} em ${fmtData(dataEntrada)}`;
+    if(saldo>0&&vencSaldo) html+=`<br><strong>Saldo (${fmt(saldo)}):</strong> ${qtdSaldo}x de ${fmt(saldo/qtdSaldo)} a partir de ${fmtData(vencSaldo)}`;
+    else if(saldo<=0) html+=`<br><span style="color:var(--green)">✓ Total coberto pela entrada</span>`;
+    el.innerHTML=html;
+  }
+}
 
 async function confirmarContratacao(id){
   if(!podeEditar()){alert('Sem permissão.');return;}
   const{data:o}=await SB.from('orcamentos').select('*').eq('id',id).single();
   if(!o)return;
-  _orcContrato = o;
-
-  // Preenche o resumo no modal
-  document.getElementById('ct-cliente').textContent = o.cliente_nome||'—';
-  document.getElementById('ct-titulo').textContent   = o.titulo||'—';
-  document.getElementById('ct-valor').textContent    = fmt(o.valor_total||0);
-  document.getElementById('ct-parcelas').value       = '1';
-  document.getElementById('ct-vencimento').value     = hoje();
+  _orcContrato=o;
+  document.getElementById('ct-cliente').textContent=o.cliente_nome||'—';
+  document.getElementById('ct-titulo').textContent=o.titulo||'—';
+  document.getElementById('ct-valor').textContent=fmt(o.valor_total||0);
+  // Reset form
+  document.querySelectorAll('input[name="ct-tipo"]')[0].checked=true;
+  document.getElementById('ct-bloco-igual').style.display='block';
+  document.getElementById('ct-bloco-entrada').style.display='none';
+  document.getElementById('ct-tipo-label-igual').style.borderColor='var(--blue)';
+  document.getElementById('ct-tipo-label-entrada').style.borderColor='var(--border2)';
+  document.getElementById('ct-parcelas').value='1';
+  document.getElementById('ct-vencimento').value=hoje();
+  document.getElementById('ct-entrada-valor').value='';
+  document.getElementById('ct-entrada-data').value=hoje();
+  document.getElementById('ct-parcelas-saldo').value='1';
+  document.getElementById('ct-vencimento-saldo').value='';
   document.getElementById('ct-preview-parcela').style.display='none';
-
-  // Popula responsáveis
   const{data:funcs}=await SB.from('funcionarios').select('id,nome').eq('status','Ativo').order('nome');
   const sel=document.getElementById('ct-responsavel');
   sel.innerHTML='<option value="">Selecione (opcional)</option>';
   (funcs||[]).forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.nome}</option>`);
-
   calcContratoParcela();
   document.getElementById('modal-contrato').classList.add('open');
 }
 
-function calcContratoParcela(){
-  const qtd = parseInt(document.getElementById('ct-parcelas')?.value||1);
-  const total = Number(_orcContrato?.valor_total||0);
-  const venc  = document.getElementById('ct-vencimento')?.value;
-  const el    = document.getElementById('ct-preview-parcela');
-  if(!el) return;
-  if(!total||!venc){el.style.display='none';return;}
-  const porParcela = total/qtd;
-  el.style.display='block';
-  el.textContent   = `${qtd} parcela(s) de ${fmt(porParcela)} — primeiro vencimento: ${fmtData(venc)}`;
-}
-
 async function executarContratacao(){
-  if(!_orcContrato){return;}
-  const o       = _orcContrato;
-  const qtd     = parseInt(document.getElementById('ct-parcelas').value||1);
-  const venc    = document.getElementById('ct-vencimento').value;
-  const respId  = document.getElementById('ct-responsavel').value;
-  if(!venc){alert('Informe o primeiro vencimento.');return;}
-
-  // 1. Busca nome do responsável
+  if(!_orcContrato)return;
+  const o=_orcContrato;
+  const tipo=document.querySelector('input[name="ct-tipo"]:checked')?.value||'igual';
+  const respId=document.getElementById('ct-responsavel').value;
   let respNome='';
-  if(respId){
-    const{data:rf}=await SB.from('funcionarios').select('nome').eq('id',respId).single();
-    respNome=rf?.nome||'';
-  }
-
-  // 2. Marca proposta como Aprovado
-  await SB.from('orcamentos').update({status:'Aprovado'}).eq('id',o.id);
-
-  // 3. Cria a venda vinculada à proposta
-  const{data:venda,error:eVenda}=await SB.from('vendas').insert({
-    cliente_id:   o.cliente_id,
-    cliente_nome: o.cliente_nome,
-    servico:      o.titulo,
-    valor:        o.valor_total,
-    etapa:        'Fechado',
-    
-    responsavel_nome: respNome,
-    data_proposta:    hoje(),
-    observacoes:  `Gerado automaticamente a partir da proposta Nº ${String(o.numero).padStart(5,'0')}.\n${o.cond_pagto||''}`,
-    orcamento_id: o.id,   // vínculo com a proposta (coluna nova)
-  }).select().single();
-
-  if(eVenda){alert('Erro ao criar venda: '+eVenda.message);return;}
-
-  // 4. Gera as parcelas automaticamente
-  const porParcela = parseFloat((o.valor_total/qtd).toFixed(2));
+  if(respId){const{data:rf}=await SB.from('funcionarios').select('nome').eq('id',respId).single();respNome=rf?.nome||'';}
   const rows=[];
-  for(let i=0;i<qtd;i++){
-    const d=new Date(venc+'T12:00:00');
-    d.setMonth(d.getMonth()+i);
-    rows.push({
-      venda_id:      venda.id,
-      venda_servico: o.titulo,
-      cliente_nome:  o.cliente_nome,
-      numero:        i+1,
-      total_parcelas:qtd,
-      valor:         porParcela,
-      data_vencimento: d.toISOString().split('T')[0],
-      status:'Pendente',
-    });
+  if(tipo==='igual'){
+    const qtd=parseInt(document.getElementById('ct-parcelas').value||1);
+    const venc=document.getElementById('ct-vencimento').value;
+    if(!venc){alert('Informe o primeiro vencimento.');return;}
+    const porParcela=parseFloat((o.valor_total/qtd).toFixed(2));
+    for(let i=0;i<qtd;i++){
+      const d=new Date(venc+'T12:00:00');d.setMonth(d.getMonth()+i);
+      rows.push({numero:i+1,total_parcelas:qtd,valor:porParcela,data_vencimento:d.toISOString().split('T')[0],status:'Pendente'});
+    }
+  } else {
+    const entrada=parseFloat(document.getElementById('ct-entrada-valor').value||0);
+    const dataEntrada=document.getElementById('ct-entrada-data').value;
+    const qtdSaldo=parseInt(document.getElementById('ct-parcelas-saldo').value||1);
+    const vencSaldo=document.getElementById('ct-vencimento-saldo').value;
+    if(!dataEntrada){alert('Informe a data da entrada.');return;}
+    const saldo=Math.max(0,o.valor_total-entrada);
+    const totalParcelas=(entrada>0?1:0)+qtdSaldo;
+    if(entrada>0) rows.push({numero:1,total_parcelas:totalParcelas,valor:parseFloat(entrada.toFixed(2)),data_vencimento:dataEntrada,status:'Pendente'});
+    if(saldo>0){
+      if(!vencSaldo){alert('Informe o 1º vencimento das parcelas do saldo.');return;}
+      const porParcela=parseFloat((saldo/qtdSaldo).toFixed(2));
+      for(let i=0;i<qtdSaldo;i++){
+        const d=new Date(vencSaldo+'T12:00:00');d.setMonth(d.getMonth()+i);
+        rows.push({numero:(entrada>0?2:1)+i,total_parcelas:totalParcelas,valor:porParcela,data_vencimento:d.toISOString().split('T')[0],status:'Pendente'});
+      }
+    }
   }
-  const{error:eParcelas}=await SB.from('parcelas').insert(rows);
+  if(!rows.length){alert('Configure pelo menos uma parcela.');return;}
+  await SB.from('orcamentos').update({status:'Aprovado'}).eq('id',o.id);
+  const{data:venda,error:eVenda}=await SB.from('vendas').insert({
+    cliente_id:o.cliente_id,cliente_nome:o.cliente_nome,servico:o.titulo,
+    valor:o.valor_total,etapa:'Fechado',responsavel_nome:respNome,
+    data_proposta:hoje(),orcamento_id:o.id,
+    observacoes:`Gerado da proposta Nº ${String(o.numero).padStart(5,'0')}.\n${o.cond_pagto||''}`,
+  }).select().single();
+  if(eVenda){alert('Erro ao criar venda: '+eVenda.message);return;}
+  const parcelas=rows.map(r=>({...r,venda_id:venda.id,venda_servico:o.titulo,cliente_nome:o.cliente_nome}));
+  const{error:eParcelas}=await SB.from('parcelas').insert(parcelas);
   if(eParcelas){alert('Venda criada, mas erro nas parcelas: '+eParcelas.message);}
-
   log('Orçamento',`Contrato confirmado — Proposta Nº ${String(o.numero).padStart(5,'0')} → Venda criada`,'Aprovado');
-
   closeModal('modal-contrato');
   _orcContrato=null;
-
-  // Atualiza painéis
-  await Promise.all([renderOrcamentos(), renderVendas(), renderFinanceiro(), renderDashboard()]);
-
-  alert(`✅ Contrato confirmado!\n\nVenda criada: ${o.cliente_nome} — ${fmt(o.valor_total)}\n${qtd} parcela(s) gerada(s) no Financeiro.`);
+  await Promise.all([renderOrcamentos(),renderVendas(),renderFinanceiro(),renderDashboard()]);
+  const resumo=tipo==='igual'?`${rows.length}x de ${fmt(rows[0].valor)}`:`Entrada de ${fmt(rows[0].valor)} + ${rows.length-1} parcela(s)`;
+  alert(`✅ Contrato confirmado!\n\n${o.cliente_nome} — ${fmt(o.valor_total)}\n${resumo} no Financeiro.`);
 }
 
 async function excluirOrc(id){
