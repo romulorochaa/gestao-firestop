@@ -264,7 +264,7 @@ tr:hover td{background:var(--surface2)}
         <div class="card">
           <div class="card-header">
             <div class="card-title">Todos os clientes</div>
-            <button class="btn btn-primary btn-sm" id="btn-novo-cliente" onclick="openModal('modal-cliente')">+ Novo cliente</button>
+            <button class="btn btn-primary btn-sm" id="btn-novo-cliente" onclick="novoCliente()">+ Novo cliente</button>
           </div>
           <div class="search-bar"><input type="text" placeholder="Buscar por nome ou cidade..." oninput="buscarClientes(this.value)"></div>
           <div id="tabela-clientes"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
@@ -881,7 +881,7 @@ function renderTabelaClientes(lista){
   const el=document.getElementById('tabela-clientes');
   if(!lista.length){el.innerHTML='<div class="empty">Nenhum cliente cadastrado.</div>';return;}
   el.innerHTML=`<table>
-    <tr><th>Nome / Empresa</th><th>Documento</th><th>Telefone</th><th>Endereço</th><th>Município / UF</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
+    <tr><th>Nome / Empresa</th><th>Documento</th><th>Telefone</th><th>Endereço</th><th>Município / UF</th><th>Status</th><th></th></tr>
     ${lista.map(c=>`<tr>
       <td><strong>${c.nome}</strong>${c.email?`<br><span style="font-size:11px;color:var(--text3)">${c.email}</span>`:''}</td>
       <td style="font-size:12px">${c.documento||'—'}</td>
@@ -889,33 +889,83 @@ function renderTabelaClientes(lista){
       <td style="font-size:12px">${[c.rua,c.bairro].filter(Boolean).join(', ')||c.cidade||'—'}</td>
       <td style="font-size:12px">${[c.cidade,c.uf].filter(Boolean).join(' / ')||'—'}</td>
       <td>${badge(c.status)}</td>
-      ${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluir('clientes','${c.id}')">Excluir</button></td>`:''}
+      <td><div class="btn-group">
+        <button class="btn btn-sm" onclick="editarCliente('${c.id}')">Editar</button>
+        ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('clientes','${c.id}')">Excluir</button>`:''}
+      </div></td>
     </tr>`).join('')}
   </table>`;
 }
+
+let _clienteEditandoId = null;
+
+function novoCliente(){
+  _clienteEditandoId = null;
+  ['c-nome','c-doc','c-tel','c-email','c-rua','c-bairro','c-cidade','c-uf','c-cep','c-obs'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('c-status').value='Ativo';
+  document.querySelector('#modal-cliente .modal-title').textContent='Novo cliente';
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
+function editarCliente(id){
+  const c = _clientes.find(x=>x.id===id);
+  if(!c) return;
+  _clienteEditandoId = id;
+  // Preenche o modal com os dados existentes
+  document.getElementById('c-nome').value   = c.nome||'';
+  document.getElementById('c-doc').value    = c.documento||'';
+  document.getElementById('c-tel').value    = c.telefone||'';
+  document.getElementById('c-email').value  = c.email||'';
+  document.getElementById('c-rua').value    = c.rua||'';
+  document.getElementById('c-bairro').value = c.bairro||'';
+  document.getElementById('c-cidade').value = c.cidade||'';
+  document.getElementById('c-uf').value     = c.uf||'';
+  document.getElementById('c-cep').value    = c.cep||'';
+  document.getElementById('c-status').value = c.status||'Ativo';
+  document.getElementById('c-obs').value    = c.observacoes||'';
+  // Muda título do modal
+  document.querySelector('#modal-cliente .modal-title').textContent = 'Editar cliente';
+  document.getElementById('modal-cliente').classList.add('open');
+}
+
 async function salvarCliente(){
   if(!podeEditar()){alert('Sem permissão.');return;}
   const nome=document.getElementById('c-nome').value.trim();
   if(!nome){alert('Informe o nome.');return;}
-  const{error}=await SB.from('clientes').insert({
+  const payload={
     nome,
-    documento: document.getElementById('c-doc').value,
-    telefone:  document.getElementById('c-tel').value,
-    email:     document.getElementById('c-email').value,
-    rua:       document.getElementById('c-rua').value,
-    bairro:    document.getElementById('c-bairro').value,
-    cidade:    document.getElementById('c-cidade').value,
-    uf:        document.getElementById('c-uf').value,
-    cep:       document.getElementById('c-cep').value,
-    status:    document.getElementById('c-status').value,
+    documento:   document.getElementById('c-doc').value,
+    telefone:    document.getElementById('c-tel').value,
+    email:       document.getElementById('c-email').value,
+    rua:         document.getElementById('c-rua').value,
+    bairro:      document.getElementById('c-bairro').value,
+    cidade:      document.getElementById('c-cidade').value,
+    uf:          document.getElementById('c-uf').value,
+    cep:         document.getElementById('c-cep').value,
+    status:      document.getElementById('c-status').value,
     observacoes: document.getElementById('c-obs').value,
-  });
-  if(error){alert('Erro: '+error.message);return;}
+  };
+  if(_clienteEditandoId){
+    // UPDATE
+    const{error}=await SB.from('clientes').update(payload).eq('id',_clienteEditandoId);
+    if(error){alert('Erro: '+error.message);return;}
+    log('Cliente','Cliente atualizado: '+nome,'Concluído');
+  } else {
+    // INSERT
+    const{error}=await SB.from('clientes').insert(payload);
+    if(error){alert('Erro: '+error.message);return;}
+    log('Cliente','Novo cliente: '+nome,'Concluído');
+  }
+  // Limpa e fecha
+  _clienteEditandoId=null;
   closeModal('modal-cliente');
+  document.querySelector('#modal-cliente .modal-title').textContent='Novo cliente';
   ['c-nome','c-doc','c-tel','c-email','c-rua','c-bairro','c-cidade','c-uf','c-cep','c-obs'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
-  log('Cliente','Novo cliente: '+nome,'Concluído');
+  document.getElementById('c-status').value='Ativo';
   renderClientes(); renderDashboard();
 }
 
