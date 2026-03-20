@@ -429,6 +429,7 @@ tr:hover td{background:var(--surface2)}
                   <div style="font-size:26px;font-weight:700;color:var(--green)" id="gantt-itens-ok">0/0</div>
                 </div>
                 <button class="btn btn-sm" onclick="abrirConfigurarDatas()" id="btn-config-datas">Configurar datas</button>
+                <button class="btn btn-sm" onclick="copiarLinkObraCliente()">Copiar link do cliente</button>
               </div>
             </div>
             <div style="margin-top:14px;background:var(--surface2);border-radius:4px;height:10px;overflow:hidden">
@@ -807,7 +808,7 @@ tr:hover td{background:var(--surface2)}
       <div id="orc-preview-conteudo">
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="imprimirOrcamento()">Imprimir / Salvar PDF</button>
-          <button class="btn btn-sm" onclick="copiarLinkCliente()">Link do cliente (em breve)</button>
+          <button class="btn btn-sm" onclick="copiarLinkCliente()">Copiar link do cliente</button>
         </div>
         <div id="orc-preview-doc" style="border:0.5px solid var(--border);border-radius:var(--r2);overflow:hidden"></div>
       </div>
@@ -1949,8 +1950,17 @@ function imprimirOrcamento(){
   setTimeout(()=>w.print(),800);
 }
 
-function copiarLinkCliente(){
-  alert('O link do cliente estará disponível quando o portal de acompanhamento da obra for implementado!');
+async function copiarLinkCliente(){
+  if(!ORC_ATIVO){alert('Abra uma proposta primeiro.');return;}
+  const{data:o}=await SB.from('orcamentos').select('token_cliente,numero,cliente_nome').eq('id',ORC_ATIVO).single();
+  if(!o?.token_cliente){alert('Token não encontrado. Tente reabrir a proposta.');return;}
+  const link=`${window.location.origin}/cliente.html?token=${o.token_cliente}`;
+  try{
+    await navigator.clipboard.writeText(link);
+    alert(`✅ Link copiado!\n\nEnvie este link para ${o.cliente_nome}:\n\n${link}\n\nO cliente poderá acompanhar o cronograma da obra sem precisar fazer login.`);
+  }catch{
+    prompt('Copie o link abaixo:',link);
+  }
 }
 
 // ── CONFIRMAR CONTRATO → criar venda automaticamente ─────────
@@ -2095,6 +2105,17 @@ const STATUS_CORES={
   'Concluído':   {bg:'#e8f5e8',border:'#2d6a2d',text:'#2d6a2d'},
   'Bloqueado':   {bg:'#fdecea',border:'#c0392b',text:'#c0392b'},
 };
+
+async function copiarLinkObraCliente(){
+  if(!_ganttOrcId){return;}
+  const{data:o}=await SB.from('orcamentos').select('token_cliente,cliente_nome').eq('id',_ganttOrcId).single();
+  if(!o?.token_cliente){alert('Token não encontrado.');return;}
+  const link=`${window.location.origin}/cliente.html?token=${o.token_cliente}`;
+  try{
+    await navigator.clipboard.writeText(link);
+    alert(`✅ Link copiado!\n\nEnvie para ${o.cliente_nome}:\n\n${link}`);
+  }catch{prompt('Copie o link:',link);}
+}
 
 // ── DASHBOARD DE OBRAS ────────────────────────────────────────
 async function renderGanttPage(){
