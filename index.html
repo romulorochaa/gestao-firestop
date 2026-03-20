@@ -650,11 +650,12 @@ const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishab
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
 });
 
-let USER=null,PERFIL=null,VENDA_ATIVA=null,ORC_ATIVO=null;
+let USER={id:'anonimo'},PERFIL={nivel:'admin',nome:'Firestop'},VENDA_ATIVA=null,ORC_ATIVO=null;
 
-// Splash inicial
+// Sem login — abre direto no app
 document.getElementById('login-wrap').style.display='none';
-document.body.insertAdjacentHTML('afterbegin',`<div id="splash" style="position:fixed;inset:0;background:#f6f5f2;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px"><div style="width:44px;height:44px;background:#1a5fb4;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px">G</div><div style="font-size:13px;color:#9e9b94">Verificando sessão...</div><div style="width:28px;height:28px;border:2px solid #e2e0db;border-top-color:#1a5fb4;border-radius:50%;animation:spin .7s linear infinite"></div></div>`);
+document.getElementById('app').classList.add('visible');
+
 const ETAPAS_CB = ['Levantamento e projeto','Protocolo no CB','Pagamento de taxas','Análise técnica','Aguardando vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
 
 const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -673,99 +674,25 @@ function badge(s){
   };
   return `<span class="badge ${m[s]||'b-gray'}">${s}</span>`;
 }
-const podeEditar = () => PERFIL?.nivel==='admin'||PERFIL?.nivel==='edicao';
-const podeExcluir = () => PERFIL?.nivel==='admin';
-const isAdmin = () => PERFIL?.nivel==='admin';
+const podeEditar = () => true;
+const podeExcluir = () => true;
+const isAdmin = () => true;
 
-// ── AUTH ──────────────────────────────────────────────────────
-async function entrar(){
-  const email=document.getElementById('login-email').value.trim();
-  const senha=document.getElementById('login-senha').value;
-  const err=document.getElementById('login-error');
-  const btn=document.getElementById('btn-entrar');
-  err.style.display='none';
-  if(!email||!senha){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
-  btn.disabled=true; btn.textContent='Entrando...';
-  const{data,error}=await SB.auth.signInWithPassword({email,password:senha});
-  if(error){
-    err.textContent='E-mail ou senha incorretos.';
-    err.style.display='block';
-    btn.disabled=false; btn.textContent='Entrar';
-    return;
-  }
-  // onAuthStateChange(SIGNED_IN) vai chamar iniciarApp automaticamente
-  // Mas chamamos também direto para garantir resposta imediata
-  if(data.user) await iniciarApp(data.user);
-}
-
-async function iniciarApp(user){
-  if(USER)return; // evita inicializar duas vezes
-  USER=user;
-  const {data:perfil}=await SB.from('perfis').select('*').eq('id',user.id).single();
-  PERFIL=perfil;
-  const splash=document.getElementById('splash');if(splash)splash.remove();
-  document.getElementById('login-wrap').style.display='none';
-  document.getElementById('app').classList.add('visible');
-  document.getElementById('user-nome').textContent=perfil?.nome||user.email;
-  const nb=document.getElementById('user-nivel-badge');
-  const nl={admin:'Admin',edicao:'Edição',visualizacao:'Visualização'};
-  const nc={admin:'nivel-admin',edicao:'nivel-edicao',visualizacao:'nivel-visualizacao'};
-  nb.textContent=nl[perfil?.nivel]||perfil?.nivel;
-  nb.className='nivel-badge '+(nc[perfil?.nivel]||'');
-  if(isAdmin()){document.getElementById('nav-admin-section').style.display='';document.getElementById('nav-usuarios').style.display='';}
-  ['btn-novo-cliente','btn-nova-venda','btn-novo-lanc','btn-novo-func','btn-novo-proc'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.style.display=podeEditar()?'':'none';
-  });
+// Inicializa o app direto
+(async()=>{
+  document.getElementById('user-nome').textContent='Firestop';
+  document.getElementById('user-nivel-badge').textContent='Admin';
+  document.getElementById('user-nivel-badge').className='nivel-badge nivel-admin';
+  document.getElementById('nav-admin-section').style.display='';
+  document.getElementById('nav-usuarios').style.display='';
   const n=new Date();
   const dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
   const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   document.getElementById('data-hoje').textContent=`${dias[n.getDay()]}, ${n.getDate()} de ${meses[n.getMonth()]} de ${n.getFullYear()}`;
   renderDashboard();
-}
+})();
 
-async function sair(){
-  USER=null;PERFIL=null;VENDA_ATIVA=null;ORC_ATIVO=null;
-  await SB.auth.signOut();
-  document.getElementById('app').classList.remove('visible');
-  document.getElementById('login-wrap').style.display='flex';
-  document.getElementById('btn-entrar').disabled=false;
-  document.getElementById('btn-entrar').textContent='Entrar';
-}
-
-// ── SESSÃO — ponto único de entrada ───────────────────────────
-// onAuthStateChange é o único responsável por iniciar/encerrar o app.
-// Ele dispara INITIAL_SESSION ao carregar (com ou sem sessão salva),
-// então não precisamos chamar getSession() separadamente.
-SB.auth.onAuthStateChange(async(event, session)=>{
-  const splash=document.getElementById('splash');
-  if(event==='INITIAL_SESSION'){
-    // Primeiro disparo — sempre ocorre ao carregar a página
-    if(session?.user){
-      await iniciarApp(session.user);
-    } else {
-      if(splash) splash.remove();
-      document.getElementById('login-wrap').style.display='flex';
-    }
-  } else if(event==='SIGNED_IN' && !USER){
-    // Login feito em outra aba ou após confirmar e-mail
-    if(splash) splash.remove();
-    await iniciarApp(session.user);
-  } else if(event==='SIGNED_OUT'){
-    USER=null; PERFIL=null;
-    document.getElementById('app').classList.remove('visible');
-    document.getElementById('login-wrap').style.display='flex';
-  } else if(event==='TOKEN_REFRESHED' && session?.user && !USER){
-    await iniciarApp(session.user);
-  }
-  // Timeout de segurança: se splash ainda existir após 8s, mostra login
-  if(splash){
-    setTimeout(()=>{
-      const s=document.getElementById('splash');
-      if(s){ s.remove(); document.getElementById('login-wrap').style.display='flex'; }
-    }, 8000);
-  }
-});
-
+function sair(){ location.reload(); }
 
 // ── NAV ──────────────────────────────────────────────────────
 function showPage(id,el){
@@ -904,7 +831,7 @@ async function salvarCliente(){
   if(!podeEditar()){alert('Sem permissão.');return;}
   const nome=document.getElementById('c-nome').value.trim();
   if(!nome){alert('Informe o nome.');return;}
-  const{error}=await SB.from('clientes').insert({nome,documento:document.getElementById('c-doc').value,telefone:document.getElementById('c-tel').value,email:document.getElementById('c-email').value,cidade:document.getElementById('c-cidade').value,status:document.getElementById('c-status').value,observacoes:document.getElementById('c-obs').value,criado_por:USER.id});
+  const{error}=await SB.from('clientes').insert({nome,documento:document.getElementById('c-doc').value,telefone:document.getElementById('c-tel').value,email:document.getElementById('c-email').value,cidade:document.getElementById('c-cidade').value,status:document.getElementById('c-status').value,observacoes:document.getElementById('c-obs').value});
   if(error){alert('Erro: '+error.message);return;}
   closeModal('modal-cliente');
   ['c-nome','c-doc','c-tel','c-email','c-cidade','c-obs'].forEach(id=>document.getElementById(id).value='');
@@ -984,7 +911,7 @@ async function salvarVenda(){
     await SB.from('vendas').update({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_id:rid||null,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).eq('id',VENDA_ATIVA);
     await log('Venda',`Venda atualizada — ${cli?.nome}: ${servico}`,etapa);
   } else {
-    const{data:nova,error}=await SB.from('vendas').insert({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_id:rid||null,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value,criado_por:USER.id}).select().single();
+    const{data:nova,error}=await SB.from('vendas').insert({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_id:rid||null,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).select().single();
     if(error){alert('Erro: '+error.message);return;}
     VENDA_ATIVA=nova.id;
     document.getElementById('modal-venda-titulo').textContent='Detalhes da venda';
@@ -1021,7 +948,7 @@ async function uploadProposta(input){
   const path=`${VENDA_ATIVA}/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
   const{error:upErr}=await SB.storage.from('propostas').upload(path,file);
   if(upErr){alert('Erro no upload: '+upErr.message+'\n\nCertifique-se de criar o bucket "propostas" no Supabase Storage.');return;}
-  await SB.from('anexos').insert({venda_id:VENDA_ATIVA,nome:file.name,tamanho:file.size,tipo_mime:file.type,storage_path:path,criado_por:USER.id});
+  await SB.from('anexos').insert({venda_id:VENDA_ATIVA,nome:file.name,tamanho:file.size,tipo_mime:file.type,storage_path:path});
   await log('Venda',`Proposta anexada: ${file.name}`,'Concluído');
   input.value='';
   carregarAnexos(VENDA_ATIVA);
@@ -1075,7 +1002,7 @@ async function gerarParcelas(){
   for(let i=0;i<qtd;i++){
     const d=new Date(inicio+'T00:00:00');
     d.setMonth(d.getMonth()+i);
-    rows.push({venda_id:VENDA_ATIVA,venda_servico:vd?.servico||'',cliente_nome:vd?.cliente_nome||'',numero:i+1,total_parcelas:qtd,valor:parseFloat(porParcela.toFixed(2)),data_vencimento:d.toISOString().split('T')[0],status:'Pendente',criado_por:USER.id});
+    rows.push({venda_id:VENDA_ATIVA,venda_servico:vd?.servico||'',cliente_nome:vd?.cliente_nome||'',numero:i+1,total_parcelas:qtd,valor:parseFloat(porParcela.toFixed(2)),data_vencimento:d.toISOString().split('T')[0],status:'Pendente'});
   }
   const{error}=await SB.from('parcelas').insert(rows);
   if(error){alert('Erro ao gerar parcelas: '+error.message);return;}
@@ -1211,7 +1138,7 @@ async function salvarLancamento(){
   if(!desc||!valor){alert('Preencha descrição e valor.');return;}
   const tipo=document.getElementById('l-tipo').value;
   const status=document.getElementById('l-status').value;
-  const{error}=await SB.from('lancamentos').insert({tipo,descricao:desc,valor:Number(valor),data_lancamento:document.getElementById('l-data').value||hoje(),origem:document.getElementById('l-origem').value,status,criado_por:USER.id});
+  const{error}=await SB.from('lancamentos').insert({tipo,descricao:desc,valor:Number(valor),data_lancamento:document.getElementById('l-data').value||hoje(),origem:document.getElementById('l-origem').value,status});
   if(error){alert('Erro: '+error.message);return;}
   closeModal('modal-lancamento');
   ['l-desc','l-valor','l-origem'].forEach(id=>document.getElementById(id).value='');
@@ -1237,7 +1164,7 @@ async function salvarFuncionario(){
   const nome=document.getElementById('rh-nome').value.trim();
   const cargo=document.getElementById('rh-cargo').value.trim();
   if(!nome||!cargo){alert('Preencha nome e cargo.');return;}
-  const{error}=await SB.from('funcionarios').insert({nome,cargo,cpf:document.getElementById('rh-cpf').value,salario:Number(document.getElementById('rh-salario').value||0),data_admissao:document.getElementById('rh-admissao').value||null,regime:document.getElementById('rh-regime').value,telefone:document.getElementById('rh-tel').value,status:document.getElementById('rh-status').value,criado_por:USER.id});
+  const{error}=await SB.from('funcionarios').insert({nome,cargo,cpf:document.getElementById('rh-cpf').value,salario:Number(document.getElementById('rh-salario').value||0),data_admissao:document.getElementById('rh-admissao').value||null,regime:document.getElementById('rh-regime').value,telefone:document.getElementById('rh-tel').value,status:document.getElementById('rh-status').value});
   if(error){alert('Erro: '+error.message);return;}
   closeModal('modal-func');['rh-nome','rh-cpf','rh-cargo','rh-salario','rh-tel'].forEach(id=>document.getElementById(id).value='');
   await log('RH','Novo funcionário: '+nome,'Concluído');renderFuncionarios();
@@ -1265,7 +1192,7 @@ async function salvarProcesso(){
   if(!cid){alert('Selecione o cliente.');return;}
   const{data:cli}=await SB.from('clientes').select('nome').eq('id',cid).single();
   const tipo=document.getElementById('b-tipo').value;
-  const{error}=await SB.from('processos_cb').insert({cliente_id:cid,cliente_nome:cli?.nome||'',tipo,protocolo:document.getElementById('b-protocolo').value,prazo:document.getElementById('b-prazo').value||null,etapa:document.getElementById('b-etapa').value,observacoes:document.getElementById('b-obs').value,criado_por:USER.id});
+  const{error}=await SB.from('processos_cb').insert({cliente_id:cid,cliente_nome:cli?.nome||'',tipo,protocolo:document.getElementById('b-protocolo').value,prazo:document.getElementById('b-prazo').value||null,etapa:document.getElementById('b-etapa').value,observacoes:document.getElementById('b-obs').value});
   if(error){alert('Erro: '+error.message);return;}
   closeModal('modal-processo');
   ['b-protocolo','b-obs'].forEach(id=>document.getElementById(id).value='');
@@ -1530,7 +1457,7 @@ async function adicionarItem(){
     orcamento_id:ORC_ATIVO,numero_item:num,descricao:desc,
     quantidade:qtd,valor_unitario:val,valor_total:parseFloat((qtd*val).toFixed(2)),
     prazo_dias:parseInt(document.getElementById('item-prazo').value||0),
-    status_execucao:'Pendente',criado_por:USER.id
+    status_execucao:'Pendente'
   }).select().single();
   if(error){alert('Erro: '+error.message);return;}
   _itensOrc.push(data);
