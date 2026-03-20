@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GestãoPRO</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f6f5f2;--surface:#ffffff;--surface2:#f0eeea;--border:#e2e0db;--border2:#ccc9c2;
+  --text:#1c1b18;--text2:#6b6860;--text3:#9e9b94;
+  --blue:#1a5fb4;--blue-bg:#e8f0fb;--blue-text:#1a5fb4;
+  --green:#2d6a2d;--green-bg:#e8f5e8;
+  --amber:#7a4f00;--amber-bg:#fef3e2;
+  --red:#c0392b;--red-bg:#fdecea;
+  --gray:#5a5855;--gray-bg:#f0eeea;
+  --purple:#5c35b0;--purple-bg:#eeebfc;
+  --r:10px;--r2:14px;--shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r2);padding:40px;width:100%;max-width:400px;box-shadow:var(--shadow)}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.login-logo-icon{width:40px;height:40px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:18px}
+.login-logo h1{font-size:20px;font-weight:600}
+.login-logo p{font-size:12px;color:var(--text2);margin-top:1px}
+.login-title{font-size:16px;font-weight:500;margin-bottom:20px}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg label{font-size:12px;font-weight:500;color:var(--text2)}
+.fg input,.fg select,.fg textarea{padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;transition:border .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue)}
+.fg textarea{resize:vertical;min-height:75px}
+.btn-login{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;margin-top:8px;transition:background .15s}
+.btn-login:hover{background:#154fa0}
+.btn-login:disabled{opacity:.6;cursor:not-allowed}
+.login-error{background:var(--red-bg);color:var(--red);font-size:13px;padding:10px 12px;border-radius:var(--r);margin-bottom:14px;display:none}
+
+/* APP */
+.app{display:none;flex-direction:column;min-height:100vh}
+.app.visible{display:flex}
+.topbar{height:54px;background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;position:fixed;top:0;left:0;right:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:10px}
+.topbar-logo-icon{width:30px;height:30px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px}
+.topbar-logo h1{font-size:15px;font-weight:600}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.user-chip{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:20px;background:var(--surface2);font-size:12px;color:var(--text2)}
+.user-chip strong{color:var(--text);font-weight:500}
+.nivel-badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500}
+.nivel-admin{background:#e8f0fb;color:#1a5fb4}
+.nivel-edicao{background:#e8f5e8;color:#2d6a2d}
+.nivel-visualizacao{background:#f0eeea;color:#5a5855}
+.btn-sair{padding:6px 14px;border:0.5px solid var(--border2);border-radius:var(--r);background:transparent;font-size:12px;font-family:inherit;cursor:pointer;color:var(--text2);transition:all .15s}
+.btn-sair:hover{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+
+/* SIDEBAR */
+.body-wrap{display:flex;margin-top:54px;min-height:calc(100vh - 54px)}
+.sidebar{width:210px;background:var(--surface);border-right:0.5px solid var(--border);position:fixed;top:54px;bottom:0;overflow-y:auto}
+.nav-section{padding:14px 16px 4px;font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;color:var(--text2);border-left:2px solid transparent;transition:all .15s;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{color:var(--blue);border-left-color:var(--blue);background:var(--blue-bg);font-weight:500}
+.nav-icon{font-size:14px;width:18px;text-align:center}
+
+/* MAIN */
+.main{margin-left:210px;flex:1;padding:24px;min-height:calc(100vh - 54px)}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:20px;font-weight:600;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:22px}
+
+/* COMPONENTS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-bottom:22px}
+.metric{background:var(--surface2);border-radius:var(--r);padding:14px 16px}
+.metric-label{font-size:11px;color:var(--text2);font-weight:500;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:600}
+.metric-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.metric-sub.up{color:var(--green)}.metric-sub.down{color:var(--red)}
+
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r2);padding:18px;margin-bottom:18px;box-shadow:var(--shadow)}
+.card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.card-title{font-size:14px;font-weight:600}
+
+.btn{padding:8px 16px;border-radius:var(--r);font-size:13px;cursor:pointer;font-family:inherit;border:0.5px solid var(--border2);background:transparent;color:var(--text);transition:all .15s}
+.btn:hover{background:var(--surface2)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:#154fa0}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-danger{color:var(--red);border-color:#f5c0bc}
+.btn-danger:hover{background:var(--red-bg)}
+.btn-success{color:var(--green);border-color:#a8d5a8}
+.btn-success:hover{background:var(--green-bg)}
+.btn-group{display:flex;gap:6px;flex-wrap:wrap}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;color:var(--text2);border-bottom:0.5px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+td{padding:10px 12px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.b-green{background:var(--green-bg);color:var(--green)}
+.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}
+.b-blue{background:var(--blue-bg);color:var(--blue-text)}
+.b-gray{background:var(--gray-bg);color:var(--gray)}
+.b-purple{background:var(--purple-bg);color:var(--purple)}
+
+.alert{padding:12px 16px;border-radius:var(--r);font-size:13px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start}
+.alert-amber{background:var(--amber-bg);color:var(--amber);border:0.5px solid #f5d79e}
+.alert-red{background:var(--red-bg);color:var(--red);border:0.5px solid #f5c0bc}
+.alert-blue{background:var(--blue-bg);color:var(--blue-text);border:0.5px solid #b8d0f5}
+.alert-green{background:var(--green-bg);color:var(--green);border:0.5px solid #a8d5a8}
+
+.tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:18px;flex-wrap:wrap}
+.tab{padding:9px 18px;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:500}
+
+.search-bar{margin-bottom:14px}
+.search-bar input{width:100%;padding:9px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none}
+.search-bar input:focus{border-color:var(--blue)}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:200;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--r2);border:0.5px solid var(--border);padding:24px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.14)}
+.modal-lg{max-width:720px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-title{font-size:16px;font-weight:600}
+.close-btn{background:none;border:none;cursor:pointer;font-size:22px;color:var(--text2);line-height:1}
+.close-btn:hover{color:var(--text)}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:0.5px solid var(--border)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.frow-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.frow-1{margin-bottom:14px}
+
+/* MODAL TABS (para detalhe da venda) */
+.modal-tabs{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:20px}
+.modal-tab{padding:8px 16px;font-size:13px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px;transition:all .15s}
+.modal-tab:hover{color:var(--text)}
+.modal-tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:500}
+.modal-pane{display:none}.modal-pane.active{display:block}
+
+/* UPLOAD */
+.upload-area{border:1.5px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2)}
+.upload-area:hover{border-color:var(--blue);background:var(--blue-bg)}
+.upload-area p{font-size:13px;color:var(--text2);margin-top:8px}
+.upload-area input{display:none}
+.upload-icon{font-size:28px}
+.file-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.file-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:var(--r);font-size:13px}
+.file-item-name{flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-item-size{font-size:11px;color:var(--text3)}
+
+/* PARCELAS */
+.parcela-row{display:grid;grid-template-columns:40px 1fr 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border)}
+.parcela-row:last-child{border-bottom:none}
+.parcela-num{font-size:12px;color:var(--text3);font-weight:600;text-align:center}
+.parcela-status-ok{color:var(--green);font-weight:500;font-size:13px}
+.parcela-status-pend{color:var(--amber);font-weight:500;font-size:13px}
+.parcela-status-atras{color:var(--red);font-weight:500;font-size:13px}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column}
+.tl-item{display:flex;gap:14px;padding:11px 0;position:relative}
+.tl-item:not(:last-child)::after{content:'';position:absolute;left:13px;top:38px;bottom:-4px;width:1px;background:var(--border)}
+.tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;z-index:1;font-weight:500}
+.tl-dot.done{background:var(--green-bg);color:var(--green)}
+.tl-dot.current{background:var(--amber-bg);color:var(--amber)}
+.tl-dot.wait{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.tl-info strong{font-size:13px;font-weight:500}
+.tl-info p{font-size:12px;color:var(--text2);margin-top:2px}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:14px}
+.loading{text-align:center;padding:30px;color:var(--text3);font-size:13px}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.divider{height:0.5px;background:var(--border);margin:18px 0}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--text2)}
+.info-value{font-weight:500}
+
+@media(max-width:700px){
+  .sidebar{display:none}.main{margin-left:0}
+  .frow,.frow-3{grid-template-columns:1fr}
+  .metrics{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">G</div>
+      <div><h1>GestãoPRO</h1><p>Sistema de gestão empresarial</p></div>
+    </div>
+    <div class="login-title">Entrar na sua conta</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="fg"><label>E-mail</label><input id="login-email" type="email" placeholder="seu@email.com"></div>
+    <div class="fg"><label>Senha</label><input id="login-senha" type="password" placeholder="••••••••"></div>
+    <button class="btn-login" id="btn-entrar" onclick="entrar()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-logo-icon">G</div>
+      <h1>GestãoPRO</h1>
+    </div>
+    <div class="topbar-right">
+      <div class="user-chip"><strong id="user-nome">—</strong><span class="nivel-badge" id="user-nivel-badge"></span></div>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </div>
+
+  <div class="body-wrap">
+    <div class="sidebar">
+      <div class="nav-section">principal</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">▦</span> Dashboard</div>
+      <div class="nav-section">gestão</div>
+      <div class="nav-item" onclick="showPage('clientes',this)"><span class="nav-icon">◉</span> Clientes</div>
+      <div class="nav-item" onclick="showPage('vendas',this)"><span class="nav-icon">◈</span> Vendas</div>
+      <div class="nav-item" onclick="showPage('financeiro',this)"><span class="nav-icon">◎</span> Financeiro</div>
+      <div class="nav-item" onclick="showPage('funcionarios',this)"><span class="nav-icon">◑</span> Funcionários</div>
+      <div class="nav-item" onclick="showPage('bombeiros',this)"><span class="nav-icon">◆</span> Corpo de Bombeiros</div>
+      <div class="nav-item" onclick="showPage('orcamentos',this)"><span class="nav-icon">◇</span> Orçamentos</div>
+      <div class="nav-section" id="nav-admin-section" style="display:none">administração</div>
+      <div class="nav-item" id="nav-usuarios" style="display:none" onclick="showPage('usuarios',this)"><span class="nav-icon">◧</span> Usuários</div>
+    </div>
+
+    <div class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title">Visão geral</div>
+        <div class="page-sub" id="data-hoje"></div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Receita confirmada</div><div class="metric-value" id="d-receita">—</div><div class="metric-sub" id="d-receita-sub"></div></div>
+          <div class="metric"><div class="metric-label">Clientes ativos</div><div class="metric-value" id="d-clientes">—</div></div>
+          <div class="metric"><div class="metric-label">Processos CB</div><div class="metric-value" id="d-cb">—</div><div class="metric-sub" id="d-cb-sub"></div></div>
+          <div class="metric"><div class="metric-label">A receber (parcelas)</div><div class="metric-value" id="d-pendente">—</div><div class="metric-sub" id="d-pendente-sub"></div></div>
+        </div>
+        <div id="alertas-dash"></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Atividade recente</div></div>
+          <div id="dash-atividades"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- CLIENTES -->
+      <div class="page" id="page-clientes">
+        <div class="page-title">Clientes</div>
+        <div class="page-sub">Gerencie sua carteira de clientes</div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Todos os clientes</div>
+            <button class="btn btn-primary btn-sm" id="btn-novo-cliente" onclick="openModal('modal-cliente')">+ Novo cliente</button>
+          </div>
+          <div class="search-bar"><input type="text" placeholder="Buscar por nome ou cidade..." oninput="buscarClientes(this.value)"></div>
+          <div id="tabela-clientes"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- VENDAS -->
+      <div class="page" id="page-vendas">
+        <div class="page-title">Vendas</div>
+        <div class="page-sub">Propostas, contratos e oportunidades</div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Em aberto</div><div class="metric-value" id="v-abertas">—</div></div>
+          <div class="metric"><div class="metric-label">Fechados</div><div class="metric-value" id="v-fechados">—</div></div>
+          <div class="metric"><div class="metric-label">Valor total pipeline</div><div class="metric-value" id="v-total">—</div></div>
+          <div class="metric"><div class="metric-label">Parcelas pendentes</div><div class="metric-value" id="v-parcelas-pend">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Pipeline de vendas</div>
+            <button class="btn btn-primary btn-sm" id="btn-nova-venda" onclick="openModal('modal-venda')">+ Nova venda</button>
+          </div>
+          <div id="tabela-vendas"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- FINANCEIRO -->
+      <div class="page" id="page-financeiro">
+        <div class="page-title">Financeiro</div>
+        <div class="page-sub">Controle de caixa, receitas, despesas e parcelas</div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Saldo atual</div><div class="metric-value" id="f-saldo">—</div></div>
+          <div class="metric"><div class="metric-label">Receitas confirmadas</div><div class="metric-value" id="f-rec">—</div></div>
+          <div class="metric"><div class="metric-label">Despesas confirmadas</div><div class="metric-value" id="f-des">—</div></div>
+          <div class="metric"><div class="metric-label">Parcelas a receber</div><div class="metric-value" id="f-pend">—</div><div class="metric-sub down" id="f-pend-sub"></div></div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="setTab(this,'ft-parcelas')">Parcelas a receber</div>
+          <div class="tab" onclick="setTab(this,'ft-todos')">Lançamentos</div>
+          <div class="tab" onclick="setTab(this,'ft-receitas')">Receitas</div>
+          <div class="tab" onclick="setTab(this,'ft-despesas')">Despesas</div>
+        </div>
+        <div id="ft-parcelas">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Parcelas a receber</div></div>
+            <div id="tabela-parcelas-fin"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+          </div>
+        </div>
+        <div id="ft-todos" style="display:none">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Todos os lançamentos</div><button class="btn btn-primary btn-sm" id="btn-novo-lanc" onclick="openModal('modal-lancamento')">+ Lançamento</button></div>
+            <div id="tabela-lanc"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+          </div>
+        </div>
+        <div id="ft-receitas" style="display:none">
+          <div class="card"><div class="card-header"><div class="card-title">Receitas</div></div><div id="tabela-lanc-rec"></div></div>
+        </div>
+        <div id="ft-despesas" style="display:none">
+          <div class="card"><div class="card-header"><div class="card-title">Despesas</div></div><div id="tabela-lanc-des"></div></div>
+        </div>
+      </div>
+
+      <!-- FUNCIONÁRIOS -->
+      <div class="page" id="page-funcionarios">
+        <div class="page-title">Funcionários</div>
+        <div class="page-sub">Equipe, cargos e controle de RH</div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Total</div><div class="metric-value" id="rh-total">—</div></div>
+          <div class="metric"><div class="metric-label">Ativos</div><div class="metric-value" id="rh-ativos">—</div></div>
+          <div class="metric"><div class="metric-label">Folha mensal</div><div class="metric-value" id="rh-folha">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Equipe</div><button class="btn btn-primary btn-sm" id="btn-novo-func" onclick="openModal('modal-func')">+ Novo funcionário</button></div>
+          <div id="tabela-func"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- CORPO DE BOMBEIROS -->
+      <div class="page" id="page-bombeiros">
+        <div class="page-title">Corpo de Bombeiros</div>
+        <div class="page-sub">Acompanhamento de AVCB, projetos preventivos e vistorias</div>
+        <div id="alertas-cb"></div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Processos em andamento</div><button class="btn btn-primary btn-sm" id="btn-novo-proc" onclick="openModal('modal-processo')">+ Novo processo</button></div>
+          <div id="tabela-cb"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+        </div>
+        <div id="timeline-wrap"></div>
+      </div>
+
+      <!-- ORÇAMENTOS -->
+      <div class="page" id="page-orcamentos">
+        <div class="page-title">Orçamentos</div>
+        <div class="page-sub">Propostas comerciais — crie, gerencie e acompanhe o status</div>
+        <div class="metrics">
+          <div class="metric"><div class="metric-label">Total</div><div class="metric-value" id="orc-total">—</div></div>
+          <div class="metric"><div class="metric-label">Enviados</div><div class="metric-value" id="orc-enviados">—</div></div>
+          <div class="metric"><div class="metric-label">Aprovados</div><div class="metric-value" id="orc-aprovados">—</div></div>
+          <div class="metric"><div class="metric-label">Valor aprovado</div><div class="metric-value" id="orc-valor">—</div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Propostas comerciais</div>
+            <button class="btn btn-primary btn-sm" id="btn-novo-orc" onclick="novoOrcamento()">+ Nova proposta</button>
+          </div>
+          <div class="search-bar"><input type="text" placeholder="Buscar por cliente ou título..." oninput="buscarOrcamentos(this.value)"></div>
+          <div id="tabela-orcamentos"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+        </div>
+      </div>
+
+      <!-- USUARIO -->
+      <!-- USUÁRIOS -->
+      <div class="page" id="page-usuarios">
+        <div class="page-title">Usuários</div>
+        <div class="page-sub">Gerencie quem tem acesso ao sistema</div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Usuários cadastrados</div><button class="btn btn-primary btn-sm" onclick="openModal('modal-usuario')">+ Convidar usuário</button></div>
+          <div id="tabela-usuarios"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Níveis de permissão</div>
+          <table><tr><th>Nível</th><th>Visualizar</th><th>Criar/Editar</th><th>Excluir</th><th>Usuários</th></tr>
+          <tr><td><span class="badge b-blue">Admin</span></td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td><span class="badge b-green">Edição</span></td><td>✅</td><td>✅</td><td>❌</td><td>❌</td></tr>
+          <tr><td><span class="badge b-gray">Visualização</span></td><td>✅</td><td>❌</td><td>❌</td><td>❌</td></tr></table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAIS ══ -->
+
+<!-- CLIENTE -->
+<div class="overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Novo cliente</div><button class="close-btn" onclick="closeModal('modal-cliente')">×</button></div>
+    <div class="frow"><div class="fg"><label>Nome / Empresa *</label><input id="c-nome" placeholder="Ex: Supermercado Central"></div><div class="fg"><label>CNPJ / CPF</label><input id="c-doc" placeholder="00.000.000/0000-00"></div></div>
+    <div class="frow"><div class="fg"><label>Telefone</label><input id="c-tel" placeholder="(85) 99999-0000"></div><div class="fg"><label>E-mail</label><input id="c-email" type="email" placeholder="contato@empresa.com"></div></div>
+    <div class="frow"><div class="fg"><label>Cidade</label><input id="c-cidade" placeholder="Fortaleza"></div><div class="fg"><label>Status</label><select id="c-status"><option>Ativo</option><option>Proposta</option><option>Inativo</option></select></div></div>
+    <div class="frow-1 fg"><label>Observações</label><textarea id="c-obs" placeholder="Informações adicionais..."></textarea></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-cliente')">Cancelar</button><button class="btn btn-primary" onclick="salvarCliente()">Salvar cliente</button></div>
+  </div>
+</div>
+
+<!-- VENDA (com abas: Dados / Proposta / Pagamentos) -->
+<div class="overlay" id="modal-venda">
+  <div class="modal modal-lg">
+    <div class="modal-header"><div class="modal-title" id="modal-venda-titulo">Nova venda</div><button class="close-btn" onclick="closeModal('modal-venda')">×</button></div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="setModalTab(this,'mvpane-dados')">Dados da venda</div>
+      <div class="modal-tab" onclick="setModalTab(this,'mvpane-proposta')" id="tab-proposta">Proposta anexada</div>
+      <div class="modal-tab" onclick="setModalTab(this,'mvpane-pagamentos')" id="tab-pagamentos">Pagamentos</div>
+    </div>
+
+    <!-- ABA DADOS -->
+    <div class="modal-pane active" id="mvpane-dados">
+      <div class="frow"><div class="fg"><label>Cliente *</label><select id="v-cliente"><option value="">Selecione...</option></select></div><div class="fg"><label>Serviço *</label><input id="v-servico" placeholder="Ex: Projeto AVCB"></div></div>
+      <div class="frow"><div class="fg"><label>Valor total (R$)</label><input id="v-valor" type="number" min="0" placeholder="0,00" oninput="calcularParcelamento()"></div><div class="fg"><label>Responsável</label><select id="v-resp"><option value="">Selecione...</option></select></div></div>
+      <div class="frow"><div class="fg"><label>Etapa</label><select id="v-etapa"><option>Iniciado</option><option>Proposta</option><option>Negociação</option><option>Fechado</option><option>Cancelado</option></select></div><div class="fg"><label>Data</label><input id="v-data" type="date"></div></div>
+      <div class="frow-1 fg"><label>Observações</label><textarea id="v-obs" placeholder="Detalhes do serviço..."></textarea></div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('modal-venda')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarVenda()">Salvar venda</button>
+      </div>
+    </div>
+
+    <!-- ABA PROPOSTA -->
+    <div class="modal-pane" id="mvpane-proposta">
+      <div class="alert alert-blue" id="alerta-venda-proposta">Salve primeiro os dados da venda para depois anexar a proposta.</div>
+      <div id="proposta-conteudo" style="display:none">
+        <div class="upload-area" onclick="document.getElementById('file-proposta').click()">
+          <div class="upload-icon">📎</div>
+          <p>Clique para selecionar ou arraste o arquivo da proposta</p>
+          <p style="font-size:11px;margin-top:4px;color:var(--text3)">PDF, Word, Excel — máx. 10MB</p>
+          <input type="file" id="file-proposta" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg" onchange="uploadProposta(this)">
+        </div>
+        <div id="lista-anexos" class="file-list"></div>
+      </div>
+    </div>
+
+    <!-- ABA PAGAMENTOS -->
+    <div class="modal-pane" id="mvpane-pagamentos">
+      <div class="alert alert-blue" id="alerta-venda-pag">Salve primeiro os dados da venda para configurar o pagamento.</div>
+      <div id="pagamento-conteudo" style="display:none">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title" style="margin-bottom:14px">Configurar parcelamento</div>
+          <div class="frow-3">
+            <div class="fg"><label>Nº de parcelas</label><input id="p-qtd" type="number" min="1" max="60" value="1" oninput="calcularParcelamento()"></div>
+            <div class="fg"><label>Valor total (R$)</label><input id="p-total" type="number" min="0" placeholder="0,00" oninput="calcularParcelamento()"></div>
+            <div class="fg"><label>Primeiro vencimento</label><input id="p-inicio" type="date" oninput="calcularParcelamento()"></div>
+          </div>
+          <div id="preview-parcelas" style="margin-top:4px"></div>
+          <div style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="gerarParcelas()">Gerar parcelas</button></div>
+        </div>
+        <div id="parcelas-existentes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LANÇAMENTO -->
+<div class="overlay" id="modal-lancamento">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Novo lançamento</div><button class="close-btn" onclick="closeModal('modal-lancamento')">×</button></div>
+    <div class="frow"><div class="fg"><label>Tipo *</label><select id="l-tipo"><option>Receita</option><option>Despesa</option></select></div><div class="fg"><label>Data *</label><input id="l-data" type="date"></div></div>
+    <div class="frow"><div class="fg"><label>Descrição *</label><input id="l-desc" placeholder="Ex: Pagamento contrato"></div><div class="fg"><label>Valor (R$) *</label><input id="l-valor" type="number" min="0" placeholder="0,00"></div></div>
+    <div class="frow"><div class="fg"><label>Cliente / Fornecedor</label><input id="l-origem" placeholder="Nome"></div><div class="fg"><label>Status</label><select id="l-status"><option>Confirmado</option><option>Pendente</option></select></div></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-lancamento')">Cancelar</button><button class="btn btn-primary" onclick="salvarLancamento()">Salvar lançamento</button></div>
+  </div>
+</div>
+
+<!-- FUNCIONÁRIO -->
+<div class="overlay" id="modal-func">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Novo funcionário</div><button class="close-btn" onclick="closeModal('modal-func')">×</button></div>
+    <div class="frow"><div class="fg"><label>Nome completo *</label><input id="rh-nome" placeholder="Nome"></div><div class="fg"><label>CPF</label><input id="rh-cpf" placeholder="000.000.000-00"></div></div>
+    <div class="frow"><div class="fg"><label>Cargo *</label><input id="rh-cargo" placeholder="Ex: Técnico de segurança"></div><div class="fg"><label>Salário (R$)</label><input id="rh-salario" type="number" min="0" placeholder="0,00"></div></div>
+    <div class="frow"><div class="fg"><label>Admissão</label><input id="rh-admissao" type="date"></div><div class="fg"><label>Regime</label><select id="rh-regime"><option>CLT</option><option>PJ</option><option>Estágio</option><option>Temporário</option></select></div></div>
+    <div class="frow"><div class="fg"><label>Telefone</label><input id="rh-tel" placeholder="(85) 99999-0000"></div><div class="fg"><label>Status</label><select id="rh-status"><option>Ativo</option><option>Férias</option><option>Afastado</option><option>Desligado</option></select></div></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-func')">Cancelar</button><button class="btn btn-primary" onclick="salvarFuncionario()">Salvar funcionário</button></div>
+  </div>
+</div>
+
+<!-- PROCESSO CB -->
+<div class="overlay" id="modal-processo">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Novo processo — Corpo de Bombeiros</div><button class="close-btn" onclick="closeModal('modal-processo')">×</button></div>
+    <div class="frow"><div class="fg"><label>Cliente *</label><select id="b-cliente"><option value="">Selecione...</option></select></div><div class="fg"><label>Tipo *</label><select id="b-tipo"><option>AVCB novo</option><option>Renovação AVCB</option><option>Projeto preventivo</option><option>Adequação</option><option>Vistoria</option></select></div></div>
+    <div class="frow"><div class="fg"><label>Nº Protocolo CB</label><input id="b-protocolo" placeholder="CB-2026-0000"></div><div class="fg"><label>Prazo</label><input id="b-prazo" type="date"></div></div>
+    <div class="frow-1 fg" style="margin-bottom:14px"><label>Etapa atual</label><select id="b-etapa"><option>Levantamento e projeto</option><option>Protocolo no CB</option><option>Pagamento de taxas</option><option>Análise técnica</option><option>Aguardando vistoria</option><option>Vistoria realizada</option><option>Aprovação final</option><option>AVCB emitido</option></select></div>
+    <div class="frow-1 fg"><label>Observações</label><textarea id="b-obs" placeholder="Detalhes..."></textarea></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-processo')">Cancelar</button><button class="btn btn-primary" onclick="salvarProcesso()">Salvar processo</button></div>
+  </div>
+</div>
+
+<!-- USUÁRIO -->
+<div class="overlay" id="modal-usuario">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Convidar usuário</div><button class="close-btn" onclick="closeModal('modal-usuario')">×</button></div>
+    <div class="alert alert-blue" style="margin-bottom:16px">O usuário receberá um e-mail para criar a senha e acessar o sistema.</div>
+    <div class="frow"><div class="fg"><label>Nome *</label><input id="u-nome" placeholder="Nome completo"></div><div class="fg"><label>E-mail *</label><input id="u-email" type="email" placeholder="email@empresa.com"></div></div>
+    <div class="frow-1 fg"><label>Nível de acesso</label><select id="u-nivel"><option value="visualizacao">Visualização — só pode ver os dados</option><option value="edicao">Edição — pode criar e editar</option><option value="admin">Admin — acesso total</option></select></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-usuario')">Cancelar</button><button class="btn btn-primary" onclick="convidarUsuario()">Enviar convite</button></div>
+  </div>
+</div>
+
+<!-- ORÇAMENTO — modal principal (layout Firestop) -->
+<div class="overlay" id="modal-orcamento">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="orc-modal-titulo">Nova proposta comercial</div>
+      <button class="close-btn" onclick="closeModal('modal-orcamento')">×</button>
+    </div>
+    <div class="modal-tabs">
+      <div class="modal-tab active" onclick="orcSetTab(this,'orc-pane-dados')">1. Dados do cliente</div>
+      <div class="modal-tab" id="orc-tab-itens" onclick="orcSetTab(this,'orc-pane-itens')">2. Itens / Serviços</div>
+      <div class="modal-tab" id="orc-tab-cond" onclick="orcSetTab(this,'orc-pane-condicoes')">3. Condições</div>
+      <div class="modal-tab" id="orc-tab-prev" onclick="orcSetTab(this,'orc-pane-preview')">4. Visualizar / PDF</div>
+    </div>
+
+    <!-- ABA 1: CLIENTE E PROPOSTA -->
+    <div class="modal-pane active" id="orc-pane-dados">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px">Dados do cliente</div>
+      <div class="frow">
+        <div class="fg"><label>Cliente *</label>
+          <select id="orc-cliente" onchange="preencherDadosCliente()"><option value="">Selecione o cliente cadastrado...</option></select>
+        </div>
+        <div class="fg"><label>CPF / CNPJ</label><input id="orc-cliente-doc" placeholder="Preenchido automaticamente pelo cadastro"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Logradouro / Endereço</label><input id="orc-cliente-end" placeholder="Rua, número"></div>
+        <div class="fg"><label>Bairro</label><input id="orc-cliente-bairro" placeholder="Bairro"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Município</label><input id="orc-cliente-cidade" placeholder="Cidade"></div>
+        <div class="fg" style="max-width:80px"><label>UF</label><input id="orc-cliente-uf" placeholder="RN" maxlength="2"></div>
+        <div class="fg"><label>CEP</label><input id="orc-cliente-cep" placeholder="00.000-000"></div>
+      </div>
+      <div style="height:0.5px;background:var(--border);margin:16px 0"></div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px">Dados da proposta</div>
+      <div class="frow">
+        <div class="fg"><label>Título / Objeto *</label><input id="orc-titulo" placeholder="Ex: Adequação SPCI — Condomínio Residencial Alfredo Volpi"></div>
+        <div class="fg"><label>Responsável técnico</label><input id="orc-responsavel" placeholder="Nome — Eng. Civil — CREA 0000000"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Nº da proposta</label><input id="orc-numero-ext" type="number" placeholder="Gerado automaticamente" readonly style="background:var(--surface2);cursor:default"></div>
+        <div class="fg"><label>Data de emissão</label><input id="orc-data" type="date"></div>
+        <div class="fg"><label>Válido por (dias)</label><input id="orc-validade" type="number" min="1" value="10"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>Status da proposta</label>
+          <select id="orc-status">
+            <option value="Rascunho">Rascunho</option>
+            <option value="Enviado">Enviado ao cliente</option>
+            <option value="Aprovado">Aprovado — Contrato firmado</option>
+            <option value="Reprovado">Reprovado</option>
+            <option value="Cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div class="fg"><label>Desconto geral (R$)</label><input id="orc-desconto" type="number" min="0" value="0" step="0.01" oninput="recalcOrc()"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('modal-orcamento')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarOrcamento()">Salvar e ir para itens →</button>
+      </div>
+    </div>
+
+    <!-- ABA 2: ITENS -->
+    <div class="modal-pane" id="orc-pane-itens">
+      <div class="alert alert-blue" id="orc-alerta-itens" style="margin-bottom:14px">Salve os dados do cliente primeiro para adicionar itens.</div>
+      <div id="orc-itens-conteudo" style="display:none">
+        <div style="background:var(--surface2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:12px">Novo item</div>
+          <div class="frow-1 fg" style="margin-bottom:10px">
+            <label>Produto / Serviço *</label>
+            <textarea id="item-desc" placeholder="Ex: EXECUÇÃO DO SISTEMA DE ALARME DE INCÊNDIO, CONFORME PROJETO APROVADO" style="min-height:52px;resize:vertical"></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:70px 100px 1fr 140px 38px;gap:10px;align-items:end">
+            <div class="fg" style="margin-bottom:0"><label>Qtd</label><input id="item-qtd" type="number" min="0.01" step="0.01" value="1" oninput="calcItemTotal()" style="text-align:center"></div>
+            <div class="fg" style="margin-bottom:0"><label>Und</label>
+              <select id="item-unidade"><option>un</option><option>m²</option><option>m</option><option>kg</option><option>h</option><option>vb</option><option>svç</option></select>
+            </div>
+            <div class="fg" style="margin-bottom:0"><label>Valor unitário (R$)</label><input id="item-valor" type="number" min="0" step="0.01" placeholder="0,00" oninput="calcItemTotal()"></div>
+            <div class="fg" style="margin-bottom:0"><label>Valor total</label>
+              <input id="item-total-preview" readonly value="R$ 0,00" style="background:var(--green-bg);color:var(--green);font-weight:600;cursor:default;font-family:'DM Mono',monospace;font-size:13px">
+            </div>
+            <button class="btn btn-primary" onclick="adicionarItem()" style="height:38px;font-size:18px;padding:0">+</button>
+          </div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+            <div class="fg" style="margin-bottom:0;flex:0 0 160px"><label style="font-size:11px">Prazo (dias — Gantt futuro)</label><input id="item-prazo" type="number" min="0" value="0" style="width:100%"></div>
+          </div>
+        </div>
+        <div id="lista-itens-orc" style="overflow-x:auto;min-height:40px"></div>
+        <div id="totais-orc" style="margin-top:12px"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('modal-orcamento')">Fechar</button>
+        <button class="btn" onclick="orcSetTab(document.querySelector('#modal-orcamento .modal-tab'),null,'orc-pane-dados')">← Voltar</button>
+        <button class="btn btn-primary" onclick="salvarOrcamento(); setTimeout(()=>orcIrParaAba('orc-tab-cond','orc-pane-condicoes'),300)">Salvar e ir para condições →</button>
+      </div>
+    </div>
+
+    <!-- ABA 3: CONDIÇÕES -->
+    <div class="modal-pane" id="orc-pane-condicoes">
+      <div class="alert alert-blue" id="orc-alerta-cond" style="display:none">Salve os dados primeiro.</div>
+      <div id="orc-cond-conteudo">
+        <div class="fg" style="margin-bottom:16px">
+          <label>Prazo de execução do serviço</label>
+          <input id="orc-prazo" placeholder="Ex: 30 (trinta) dias corridos a partir da assinatura do contrato">
+        </div>
+        <div class="fg" style="margin-bottom:16px">
+          <label>Formas de pagamento</label>
+          <textarea id="orc-cond-pagto" style="min-height:90px" placeholder="Ex: R$ 20.208,00 (vinte mil duzentos e oito reais) no ato da contratação;&#10;E 4x parcelas iguais de R$ 20.208,00 mensais."></textarea>
+        </div>
+        <div class="fg" style="margin-bottom:4px">
+          <label>Outras observações</label>
+          <textarea id="orc-obs" style="min-height:110px" placeholder="Ex: Orçamento contempla todo material e mão de obra necessária para execução;&#10;Caso seja identificada qualquer irregularidade, o cliente será comunicado por laudo técnico;&#10;O laudo será emitido e entregue juntamente com a respectiva ART;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('modal-orcamento')">Fechar</button>
+        <button class="btn btn-primary" onclick="salvarOrcamento(); setTimeout(()=>orcIrParaAba('orc-tab-prev','orc-pane-preview'),300)">Salvar e visualizar →</button>
+      </div>
+    </div>
+
+    <!-- ABA 4: PREVIEW FIRESTOP -->
+    <div class="modal-pane" id="orc-pane-preview">
+      <div class="alert alert-blue" id="orc-alerta-preview" style="display:none">Adicione itens para visualizar.</div>
+      <div id="orc-preview-conteudo">
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" onclick="imprimirOrcamento()">Imprimir / Salvar PDF</button>
+          <button class="btn btn-sm" onclick="copiarLinkCliente()">Link do cliente (em breve)</button>
+        </div>
+        <div id="orc-preview-doc" style="border:0.5px solid var(--border);border-radius:var(--r2);overflow:hidden"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createClient } = supabase;
+const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl',{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+});
+
+let USER=null,PERFIL=null,VENDA_ATIVA=null,ORC_ATIVO=null;
+
+// Splash de carregamento enquanto verifica sessão salva
+document.getElementById('login-wrap').style.display='none';
+document.body.insertAdjacentHTML('afterbegin',`<div id="splash" style="position:fixed;inset:0;background:#f6f5f2;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:14px"><div style="width:44px;height:44px;background:#1a5fb4;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px">G</div><div style="font-size:13px;color:#9e9b94">Verificando sessão...</div><div style="width:28px;height:28px;border:2px solid #e2e0db;border-top-color:#1a5fb4;border-radius:50%;animation:spin .7s linear infinite"></div></div>`);
+
+// Verifica se já existe sessão salva no navegador
+(async()=>{
+  const{data:{session}}=await SB.auth.getSession();
+  if(session?.user){
+    await iniciarApp(session.user);
+  } else {
+    document.getElementById('splash').remove();
+    document.getElementById('login-wrap').style.display='flex';
+  }
+})();
+const ETAPAS_CB = ['Levantamento e projeto','Protocolo no CB','Pagamento de taxas','Análise técnica','Aguardando vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
+
+const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtData = d => { if(!d) return '—'; const p=d.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
+const hoje = () => new Date().toISOString().split('T')[0];
+const diasAte = d => { if(!d) return null; return Math.ceil((new Date(d.split('T')[0]+'T00:00:00') - new Date(hoje()+'T00:00:00'))/86400000); };
+const fmtTam = b => b>1048576?`${(b/1048576).toFixed(1)} MB`:`${(b/1024).toFixed(0)} KB`;
+
+function badge(s){
+  const m={
+    'Ativo':'b-green','Fechado':'b-green','Confirmado':'b-green','Recebido':'b-green','AVCB emitido':'b-green','Vistoria realizada':'b-green','Aprovação final':'b-green',
+    'Proposta':'b-amber','Pendente':'b-amber','Análise técnica':'b-amber','Aguardando vistoria':'b-amber','Pagamento de taxas':'b-amber','Protocolo no CB':'b-amber','Iniciado':'b-amber',
+    'Atrasado':'b-red','Cancelado':'b-red','Desligado':'b-red',
+    'Negociação':'b-blue','Levantamento e projeto':'b-blue',
+    'Inativo':'b-gray','Afastado':'b-gray','Férias':'b-purple',
+  };
+  return `<span class="badge ${m[s]||'b-gray'}">${s}</span>`;
+}
+const podeEditar = () => PERFIL?.nivel==='admin'||PERFIL?.nivel==='edicao';
+const podeExcluir = () => PERFIL?.nivel==='admin';
+const isAdmin = () => PERFIL?.nivel==='admin';
+
+// ── AUTH ──────────────────────────────────────────────────────
+async function entrar(){
+  const email=document.getElementById('login-email').value.trim();
+  const senha=document.getElementById('login-senha').value;
+  const err=document.getElementById('login-error');
+  const btn=document.getElementById('btn-entrar');
+  err.style.display='none';
+  if(!email||!senha){err.textContent='Preencha e-mail e senha.';err.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Entrando...';
+  const {data,error}=await SB.auth.signInWithPassword({email,password:senha});
+  if(error){err.textContent='E-mail ou senha incorretos.';err.style.display='block';btn.disabled=false;btn.textContent='Entrar';return;}
+  await iniciarApp(data.user);
+}
+
+async function iniciarApp(user){
+  if(USER)return; // evita inicializar duas vezes
+  USER=user;
+  const {data:perfil}=await SB.from('perfis').select('*').eq('id',user.id).single();
+  PERFIL=perfil;
+  const splash=document.getElementById('splash');if(splash)splash.remove();
+  document.getElementById('login-wrap').style.display='none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('user-nome').textContent=perfil?.nome||user.email;
+  const nb=document.getElementById('user-nivel-badge');
+  const nl={admin:'Admin',edicao:'Edição',visualizacao:'Visualização'};
+  const nc={admin:'nivel-admin',edicao:'nivel-edicao',visualizacao:'nivel-visualizacao'};
+  nb.textContent=nl[perfil?.nivel]||perfil?.nivel;
+  nb.className='nivel-badge '+(nc[perfil?.nivel]||'');
+  if(isAdmin()){document.getElementById('nav-admin-section').style.display='';document.getElementById('nav-usuarios').style.display='';}
+  ['btn-novo-cliente','btn-nova-venda','btn-novo-lanc','btn-novo-func','btn-novo-proc'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display=podeEditar()?'':'none';
+  });
+  const n=new Date();
+  const dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  document.getElementById('data-hoje').textContent=`${dias[n.getDay()]}, ${n.getDate()} de ${meses[n.getMonth()]} de ${n.getFullYear()}`;
+  renderDashboard();
+}
+
+async function sair(){
+  await SB.auth.signOut();
+  USER=null;PERFIL=null;VENDA_ATIVA=null;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-wrap').style.display='flex';
+  document.getElementById('btn-entrar').disabled=false;
+  document.getElementById('btn-entrar').textContent='Entrar';
+}
+
+// Verifica sessão salva ao abrir — remove splash e decide o que mostrar
+(async()=>{
+  const{data:{session}}=await SB.auth.getSession();
+  const splash=document.getElementById('splash');
+  if(session?.user){
+    await iniciarApp(session.user);
+  } else {
+    if(splash)splash.remove();
+    document.getElementById('login-wrap').style.display='flex';
+  }
+})();
+
+// Escuta mudanças de autenticação (ex: login em outra aba)
+SB.auth.onAuthStateChange(async(event,session)=>{
+  if(event==='SIGNED_IN'&&session?.user&&!USER) await iniciarApp(session.user);
+  if(event==='SIGNED_OUT'){
+    USER=null;PERFIL=null;
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('login-wrap').style.display='flex';
+  }
+});
+
+// ── NAV ──────────────────────────────────────────────────────
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el)el.classList.add('active');
+  const fn={dashboard:renderDashboard,clientes:renderClientes,vendas:renderVendas,financeiro:renderFinanceiro,funcionarios:renderFuncionarios,bombeiros:renderBombeiros,usuarios:renderUsuarios,orcamentos:renderOrcamentos};
+  if(fn[id])fn[id]();
+}
+
+function setTab(el,tabId){
+  el.closest('.tabs').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['ft-parcelas','ft-todos','ft-receitas','ft-despesas'].forEach(id=>{const d=document.getElementById(id);if(d)d.style.display='none';});
+  document.getElementById(tabId).style.display='block';
+  if(tabId==='ft-receitas')renderLancFiltro('Receita');
+  if(tabId==='ft-despesas')renderLancFiltro('Despesa');
+  if(tabId==='ft-parcelas')renderParcelasFinanceiro();
+}
+
+function setModalTab(el,paneId){
+  el.closest('.modal-tabs').querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById(paneId).classList.add('active');
+  if(paneId==='mvpane-proposta'&&VENDA_ATIVA)carregarAnexos(VENDA_ATIVA);
+  if(paneId==='mvpane-pagamentos'&&VENDA_ATIVA)carregarParcelas(VENDA_ATIVA);
+}
+
+// ── MODAIS ────────────────────────────────────────────────────
+async function openModal(id){
+  if(id==='modal-venda'){
+    VENDA_ATIVA=null;
+    document.getElementById('modal-venda-titulo').textContent='Nova venda';
+    document.getElementById('alerta-venda-proposta').style.display='flex';
+    document.getElementById('proposta-conteudo').style.display='none';
+    document.getElementById('alerta-venda-pag').style.display='flex';
+    document.getElementById('pagamento-conteudo').style.display='none';
+    document.getElementById('lista-anexos').innerHTML='';
+    document.getElementById('parcelas-existentes').innerHTML='';
+    document.getElementById('preview-parcelas').innerHTML='';
+    // reset pane
+    document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelector('.modal-tab').classList.add('active');
+    document.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('active'));
+    document.getElementById('mvpane-dados').classList.add('active');
+  }
+  await popularSelects();
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
+
+async function popularSelects(){
+  const [{data:cl},{data:fn}]=await Promise.all([
+    SB.from('clientes').select('id,nome').order('nome'),
+    SB.from('funcionarios').select('id,nome').eq('status','Ativo').order('nome'),
+  ]);
+  ['v-cliente','b-cliente'].forEach(sid=>{
+    const s=document.getElementById(sid);if(!s)return;
+    const cur=s.value;
+    s.innerHTML='<option value="">Selecione...</option>';
+    (cl||[]).forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.nome}</option>`);
+    s.value=cur;
+  });
+  const vr=document.getElementById('v-resp');
+  if(vr){
+    vr.innerHTML='<option value="">Selecione...</option>';
+    (fn||[]).forEach(f=>vr.innerHTML+=`<option value="${f.id}">${f.nome}</option>`);
+  }
+}
+
+async function log(tipo,desc,status){
+  await SB.from('atividades').insert({tipo,descricao:desc,status,usuario_nome:PERFIL?.nome||USER?.email});
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+async function renderDashboard(){
+  const [{data:lanc},{data:cl},{data:procs},{data:parcelas}]=await Promise.all([
+    SB.from('lancamentos').select('*'),
+    SB.from('clientes').select('status'),
+    SB.from('processos_cb').select('*'),
+    SB.from('parcelas').select('*'),
+  ]);
+  const recLanc=(lanc||[]).filter(l=>l.tipo==='Receita'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const recParc=(parcelas||[]).filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
+  const rec=recLanc+recParc;
+  const ativos=(cl||[]).filter(c=>c.status==='Ativo').length;
+  const pendParcelas=(parcelas||[]).filter(p=>p.status==='Pendente').reduce((s,p)=>s+Number(p.valor),0);
+  const atrasadas=(parcelas||[]).filter(p=>p.status==='Pendente'&&diasAte(p.data_vencimento)<0).length;
+  document.getElementById('d-receita').textContent=fmt(rec);
+  document.getElementById('d-clientes').textContent=ativos;
+  document.getElementById('d-cb').textContent=(procs||[]).length;
+  document.getElementById('d-pendente').textContent=fmt(pendParcelas);
+  document.getElementById('d-pendente-sub').textContent=atrasadas>0?`${atrasadas} parcela(s) atrasada(s)`:'';
+  document.getElementById('d-pendente-sub').className='metric-sub'+(atrasadas>0?' down':'');
+  const urgentes=(procs||[]).filter(p=>{const d=diasAte(p.prazo);return d!==null&&d<=7&&d>=0;});
+  const alertas=document.getElementById('alertas-dash');
+  alertas.innerHTML='';
+  urgentes.forEach(p=>alertas.innerHTML+=`<div class="alert alert-amber">⚠ Processo ${p.tipo} — ${p.cliente_nome}: prazo em ${diasAte(p.prazo)} dia(s)</div>`);
+  if(atrasadas>0) alertas.innerHTML+=`<div class="alert alert-red">⚠ ${atrasadas} parcela(s) com vencimento atrasado — verifique o financeiro</div>`;
+  document.getElementById('d-cb-sub').textContent=urgentes.length>0?`${urgentes.length} com prazo próximo`:'';
+  const {data:ativ}=await SB.from('atividades').select('*').order('criado_em',{ascending:false}).limit(10);
+  const el=document.getElementById('dash-atividades');
+  if(!ativ||!ativ.length){el.innerHTML='<div class="empty">Nenhuma atividade ainda.</div>';return;}
+  el.innerHTML=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Usuário</th><th>Status</th></tr>
+  ${ativ.map(a=>`<tr><td>${fmtData(a.criado_em)}</td><td><span class="badge b-gray" style="font-size:10px">${a.tipo}</span></td><td>${a.descricao}</td><td style="font-size:12px;color:var(--text2)">${a.usuario_nome||'—'}</td><td>${badge(a.status)}</td></tr>`).join('')}</table>`;
+}
+
+// ── CLIENTES ────────────────────────────────────────────────
+let _clientes=[];
+async function renderClientes(){
+  const{data}=await SB.from('clientes').select('*').order('nome');
+  _clientes=data||[];renderTabelaClientes(_clientes);
+}
+function buscarClientes(q){
+  renderTabelaClientes(_clientes.filter(c=>c.nome.toLowerCase().includes(q.toLowerCase())||(c.cidade||'').toLowerCase().includes(q.toLowerCase())));
+}
+function renderTabelaClientes(lista){
+  const el=document.getElementById('tabela-clientes');
+  if(!lista.length){el.innerHTML='<div class="empty">Nenhum cliente cadastrado.</div>';return;}
+  el.innerHTML=`<table><tr><th>Nome/Empresa</th><th>Telefone</th><th>E-mail</th><th>Cidade</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
+  ${lista.map(c=>`<tr><td><strong>${c.nome}</strong>${c.documento?`<br><span style="font-size:11px;color:var(--text3)">${c.documento}</span>`:''}</td><td>${c.telefone||'—'}</td><td>${c.email||'—'}</td><td>${c.cidade||'—'}</td><td>${badge(c.status)}</td>${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluir('clientes','${c.id}')">Excluir</button></td>`:''}</tr>`).join('')}</table>`;
+}
+async function salvarCliente(){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const nome=document.getElementById('c-nome').value.trim();
+  if(!nome){alert('Informe o nome.');return;}
+  const{error}=await SB.from('clientes').insert({nome,documento:document.getElementById('c-doc').value,telefone:document.getElementById('c-tel').value,email:document.getElementById('c-email').value,cidade:document.getElementById('c-cidade').value,status:document.getElementById('c-status').value,observacoes:document.getElementById('c-obs').value,criado_por:USER.id});
+  if(error){alert('Erro: '+error.message);return;}
+  closeModal('modal-cliente');
+  ['c-nome','c-doc','c-tel','c-email','c-cidade','c-obs'].forEach(id=>document.getElementById(id).value='');
+  await log('Cliente','Novo cliente: '+nome,'Concluído');
+  renderClientes();renderDashboard();
+}
+
+// ── VENDAS ────────────────────────────────────────────────────
+async function renderVendas(){
+  const[{data:vendas},{data:parcelas}]=await Promise.all([
+    SB.from('vendas').select('*').order('criado_em',{ascending:false}),
+    SB.from('parcelas').select('*'),
+  ]);
+  const v=vendas||[];const p=parcelas||[];
+  document.getElementById('v-abertas').textContent=v.filter(x=>['Iniciado','Proposta','Negociação'].includes(x.etapa)).length;
+  document.getElementById('v-fechados').textContent=v.filter(x=>x.etapa==='Fechado').length;
+  document.getElementById('v-total').textContent=fmt(v.reduce((s,x)=>s+Number(x.valor||0),0));
+  document.getElementById('v-parcelas-pend').textContent=p.filter(x=>x.status==='Pendente').length;
+  const el=document.getElementById('tabela-vendas');
+  if(!v.length){el.innerHTML='<div class="empty">Nenhuma venda cadastrada.</div>';return;}
+  el.innerHTML=`<table><tr><th>Cliente</th><th>Serviço</th><th>Valor</th><th>Etapa</th><th>Data</th><th>Parcelas</th><th>Ações</th></tr>
+  ${v.map(vd=>{
+    const pvd=p.filter(x=>x.venda_id===vd.id);
+    const recebido=pvd.filter(x=>x.status==='Recebido').reduce((s,x)=>s+Number(x.valor),0);
+    const total=pvd.reduce((s,x)=>s+Number(x.valor),0);
+    const parcelasInfo=pvd.length>0?`<span style="font-size:11px">${pvd.filter(x=>x.status==='Recebido').length}/${pvd.length} recebidas</span>`:'<span style="font-size:11px;color:var(--text3)">Sem parcelas</span>';
+    return`<tr>
+      <td><strong>${vd.cliente_nome||'—'}</strong></td>
+      <td>${vd.servico}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px">${fmt(vd.valor)}</td>
+      <td>${badge(vd.etapa)}</td>
+      <td>${fmtData(vd.data_proposta)}</td>
+      <td>${parcelasInfo}</td>
+      <td><div class="btn-group">
+        <button class="btn btn-sm" onclick="abrirDetalheVenda('${vd.id}')">Detalhes</button>
+        ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('vendas','${vd.id}')">Excluir</button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('')}</table>`;
+}
+
+async function abrirDetalheVenda(id){
+  VENDA_ATIVA=id;
+  const{data:v}=await SB.from('vendas').select('*').eq('id',id).single();
+  await popularSelects();
+  document.getElementById('modal-venda-titulo').textContent='Detalhes da venda';
+  document.getElementById('v-cliente').value=v.cliente_id||'';
+  document.getElementById('v-servico').value=v.servico;
+  document.getElementById('v-valor').value=v.valor;
+  document.getElementById('v-resp').value=v.responsavel_id||'';
+  document.getElementById('v-etapa').value=v.etapa;
+  document.getElementById('v-data').value=v.data_proposta||'';
+  document.getElementById('v-obs').value=v.observacoes||'';
+  document.getElementById('p-total').value=v.valor;
+  document.getElementById('alerta-venda-proposta').style.display='none';
+  document.getElementById('proposta-conteudo').style.display='block';
+  document.getElementById('alerta-venda-pag').style.display='none';
+  document.getElementById('pagamento-conteudo').style.display='block';
+  document.getElementById('modal-venda').classList.add('open');
+  carregarAnexos(id);carregarParcelas(id);
+}
+
+async function salvarVenda(){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const cid=document.getElementById('v-cliente').value;
+  const servico=document.getElementById('v-servico').value.trim();
+  if(!cid||!servico){alert('Preencha cliente e serviço.');return;}
+  const{data:cli}=await SB.from('clientes').select('nome').eq('id',cid).single();
+  const rid=document.getElementById('v-resp').value;
+  let respNome='';
+  if(rid){const{data:rf}=await SB.from('funcionarios').select('nome').eq('id',rid).single();respNome=rf?.nome||'';}
+  const etapa=document.getElementById('v-etapa').value;
+  const valor=document.getElementById('v-valor').value||0;
+
+  if(VENDA_ATIVA){
+    // atualizar
+    await SB.from('vendas').update({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_id:rid||null,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).eq('id',VENDA_ATIVA);
+    await log('Venda',`Venda atualizada — ${cli?.nome}: ${servico}`,etapa);
+  } else {
+    const{data:nova,error}=await SB.from('vendas').insert({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_id:rid||null,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value,criado_por:USER.id}).select().single();
+    if(error){alert('Erro: '+error.message);return;}
+    VENDA_ATIVA=nova.id;
+    document.getElementById('modal-venda-titulo').textContent='Detalhes da venda';
+    document.getElementById('alerta-venda-proposta').style.display='none';
+    document.getElementById('proposta-conteudo').style.display='block';
+    document.getElementById('alerta-venda-pag').style.display='none';
+    document.getElementById('pagamento-conteudo').style.display='block';
+    document.getElementById('p-total').value=valor;
+    await log('Venda',`Nova venda — ${cli?.nome}: ${servico}`,etapa);
+    alert('Venda salva! Agora você pode anexar a proposta e configurar os pagamentos nas abas acima.');
+  }
+  renderVendas();renderDashboard();
+}
+
+// ── ANEXOS ───────────────────────────────────────────────────
+async function carregarAnexos(vendaId){
+  const{data}=await SB.from('anexos').select('*').eq('venda_id',vendaId).order('criado_em');
+  const el=document.getElementById('lista-anexos');
+  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);text-align:center;padding:12px 0">Nenhum arquivo anexado ainda.</div>';return;}
+  el.innerHTML=data.map(a=>`<div class="file-item">
+    <span style="font-size:18px">📄</span>
+    <span class="file-item-name">${a.nome}</span>
+    <span class="file-item-size">${fmtTam(a.tamanho||0)}</span>
+    <button class="btn btn-sm" onclick="baixarAnexo('${a.storage_path}','${a.nome}')">Baixar</button>
+    ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluirAnexo('${a.id}','${a.storage_path}')">✕</button>`:''}
+  </div>`).join('');
+}
+
+async function uploadProposta(input){
+  if(!VENDA_ATIVA){alert('Salve a venda primeiro.');return;}
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const file=input.files[0];if(!file)return;
+  if(file.size>10*1024*1024){alert('Arquivo muito grande. Máximo 10MB.');return;}
+  const path=`${VENDA_ATIVA}/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
+  const{error:upErr}=await SB.storage.from('propostas').upload(path,file);
+  if(upErr){alert('Erro no upload: '+upErr.message+'\n\nCertifique-se de criar o bucket "propostas" no Supabase Storage.');return;}
+  await SB.from('anexos').insert({venda_id:VENDA_ATIVA,nome:file.name,tamanho:file.size,tipo_mime:file.type,storage_path:path,criado_por:USER.id});
+  await log('Venda',`Proposta anexada: ${file.name}`,'Concluído');
+  input.value='';
+  carregarAnexos(VENDA_ATIVA);
+}
+
+async function baixarAnexo(path,nome){
+  const{data}=await SB.storage.from('propostas').createSignedUrl(path,60);
+  if(data?.signedUrl){const a=document.createElement('a');a.href=data.signedUrl;a.download=nome;a.click();}
+}
+
+async function excluirAnexo(id,path){
+  if(!confirm('Excluir este arquivo?'))return;
+  await SB.storage.from('propostas').remove([path]);
+  await SB.from('anexos').delete().eq('id',id);
+  carregarAnexos(VENDA_ATIVA);
+}
+
+// ── PARCELAS ─────────────────────────────────────────────────
+function calcularParcelamento(){
+  const qtd=parseInt(document.getElementById('p-qtd')?.value||1);
+  const total=parseFloat(document.getElementById('p-total')?.value||document.getElementById('v-valor')?.value||0);
+  const inicio=document.getElementById('p-inicio')?.value;
+  const el=document.getElementById('preview-parcelas');
+  if(!el)return;
+  if(!total||!inicio){el.innerHTML='';return;}
+  const porParcela=total/qtd;
+  let html=`<div style="margin-top:12px;font-size:13px;color:var(--text2);margin-bottom:8px">Prévia do parcelamento:</div>
+  <div style="max-height:200px;overflow-y:auto;border:0.5px solid var(--border);border-radius:var(--r)">`;
+  for(let i=0;i<qtd;i++){
+    const d=new Date(inicio+'T00:00:00');
+    d.setMonth(d.getMonth()+i);
+    const dStr=d.toISOString().split('T')[0];
+    html+=`<div class="info-row" style="padding:8px 12px"><span class="info-label">Parcela ${i+1}/${qtd}</span><span>${fmtData(dStr)}</span><span class="info-value">${fmt(porParcela)}</span></div>`;
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+async function gerarParcelas(){
+  if(!VENDA_ATIVA){alert('Salve a venda primeiro.');return;}
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const qtd=parseInt(document.getElementById('p-qtd').value||1);
+  const total=parseFloat(document.getElementById('p-total').value||0);
+  const inicio=document.getElementById('p-inicio').value;
+  if(!total||!inicio){alert('Preencha o valor total e o primeiro vencimento.');return;}
+  if(!confirm(`Gerar ${qtd} parcela(s) de ${fmt(total/qtd)}? As parcelas existentes desta venda serão substituídas.`))return;
+  await SB.from('parcelas').delete().eq('venda_id',VENDA_ATIVA);
+  const{data:vd}=await SB.from('vendas').select('servico,cliente_nome').eq('id',VENDA_ATIVA).single();
+  const porParcela=total/qtd;
+  const rows=[];
+  for(let i=0;i<qtd;i++){
+    const d=new Date(inicio+'T00:00:00');
+    d.setMonth(d.getMonth()+i);
+    rows.push({venda_id:VENDA_ATIVA,venda_servico:vd?.servico||'',cliente_nome:vd?.cliente_nome||'',numero:i+1,total_parcelas:qtd,valor:parseFloat(porParcela.toFixed(2)),data_vencimento:d.toISOString().split('T')[0],status:'Pendente',criado_por:USER.id});
+  }
+  const{error}=await SB.from('parcelas').insert(rows);
+  if(error){alert('Erro ao gerar parcelas: '+error.message);return;}
+  await log('Financeiro',`${qtd} parcela(s) gerada(s) — ${vd?.cliente_nome}: ${vd?.servico}`,'Pendente');
+  carregarParcelas(VENDA_ATIVA);renderVendas();renderDashboard();renderFinanceiro();
+}
+
+async function carregarParcelas(vendaId){
+  const{data}=await SB.from('parcelas').select('*').eq('venda_id',vendaId).order('numero');
+  const el=document.getElementById('parcelas-existentes');
+  if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:12px 0">Nenhuma parcela gerada ainda. Use o formulário acima para configurar o pagamento.</div>';return;}
+  const total=data.reduce((s,p)=>s+Number(p.valor),0);
+  const recebido=data.filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
+  el.innerHTML=`<div style="margin-bottom:12px">
+    <div class="info-row"><span class="info-label">Total do contrato</span><span class="info-value">${fmt(total)}</span></div>
+    <div class="info-row"><span class="info-label">Recebido</span><span class="info-value" style="color:var(--green)">${fmt(recebido)}</span></div>
+    <div class="info-row"><span class="info-label">Pendente</span><span class="info-value" style="color:var(--amber)">${fmt(total-recebido)}</span></div>
+  </div>
+  ${data.map(p=>{
+    const d=diasAte(p.data_vencimento);
+    const atrasado=p.status==='Pendente'&&d!==null&&d<0;
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)">
+      <span style="font-size:12px;color:var(--text3);font-weight:600;min-width:30px;text-align:center">${p.numero}/${p.total_parcelas}</span>
+      <span style="flex:1;font-size:13px;font-family:'DM Mono',monospace">${fmt(p.valor)}</span>
+      <span style="font-size:12px;color:var(--text2)">${fmtData(p.data_vencimento)}${atrasado?` <span style="color:var(--red)">(atrasado)</span>`:''}</span>
+      <span>${badge(atrasado?'Atrasado':p.status)}</span>
+      ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="marcarRecebido('${p.id}')">Recebido ✓</button>`:''}
+    </div>`;
+  }).join('')}`;
+}
+
+async function marcarRecebido(parcelaId){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const{error}=await SB.from('parcelas').update({status:'Recebido',data_recebimento:hoje()}).eq('id',parcelaId);
+  if(error){alert('Erro ao atualizar: '+error.message);return;}
+  await log('Financeiro','Parcela marcada como recebida','Recebido');
+  // Atualiza o modal de parcelas imediatamente
+  if(VENDA_ATIVA)await carregarParcelas(VENDA_ATIVA);
+  // Atualiza painéis em paralelo
+  await Promise.all([renderFinanceiro(),renderDashboard(),renderVendas()]);
+}
+
+// ── FINANCEIRO ───────────────────────────────────────────────
+async function renderFinanceiro(){
+  const[{data:lanc},{data:parc}]=await Promise.all([
+    SB.from('lancamentos').select('*').order('data_lancamento',{ascending:false}),
+    SB.from('parcelas').select('*').order('data_vencimento'),
+  ]);
+  // Receitas: lançamentos manuais confirmados + parcelas recebidas
+  const recLanc=(lanc||[]).filter(l=>l.tipo==='Receita'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const recParc=(parc||[]).filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
+  const rec=recLanc+recParc;
+  // Despesas: apenas lançamentos manuais confirmados
+  const des=(lanc||[]).filter(l=>l.tipo==='Despesa'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  // Parcelas pendentes (a receber)
+  const pendParc=(parc||[]).filter(p=>p.status==='Pendente').reduce((s,p)=>s+Number(p.valor),0);
+  const atrasadas=(parc||[]).filter(p=>p.status==='Pendente'&&p.data_vencimento&&diasAte(p.data_vencimento)<0).length;
+  document.getElementById('f-saldo').textContent=fmt(rec-des);
+  document.getElementById('f-saldo').style.color=rec-des>=0?'var(--green)':'var(--red)';
+  document.getElementById('f-rec').textContent=fmt(rec);
+  document.getElementById('f-des').textContent=fmt(des);
+  document.getElementById('f-pend').textContent=fmt(pendParc);
+  document.getElementById('f-pend-sub').textContent=atrasadas>0?`${atrasadas} atrasada(s)`:'';
+
+  // Monta tabela "Todos": lançamentos manuais + parcelas recebidas, ordenados por data
+  const parcelasComoLanc=(parc||[]).filter(p=>p.status==='Recebido').map(p=>({
+    id:p.id,tipo:'Receita',
+    data_lancamento:p.data_recebimento||p.data_vencimento,
+    descricao:`Parcela ${p.numero}/${p.total_parcelas} — ${p.venda_servico||''}`,
+    origem:p.cliente_nome,valor:p.valor,status:'Recebido',_parcela:true
+  }));
+  const todos=[...(lanc||[]),...parcelasComoLanc].sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
+
+  const tplRow=(l)=>`<tr><td>${fmtData(l.data_lancamento)}</td><td><span class="badge ${l.tipo==='Receita'?'b-green':'b-red'}">${l.tipo}</span></td><td>${l.descricao}</td><td>${l.origem||'—'}</td><td style="font-weight:500;color:${l.tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${l.tipo==='Receita'?'+':'-'}${fmt(l.valor)}</td><td>${badge(l.status)}</td>${podeExcluir()&&!l._parcela?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:(podeExcluir()?'<td></td>':'')}</tr>`;
+  const thead=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Origem</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>`;
+
+  document.getElementById('tabela-lanc').innerHTML=todos.length?thead+todos.map(tplRow).join('')+'</table>':'<div class="empty">Nenhum lançamento ainda.</div>';
+  renderParcelasFinanceiro(parc);
+}
+
+async function renderParcelasFinanceiro(parcelas){
+  if(!parcelas){const{data}=await SB.from('parcelas').select('*').order('data_vencimento');parcelas=data||[];}
+  const el=document.getElementById('tabela-parcelas-fin');
+  if(!parcelas.length){el.innerHTML='<div class="empty">Nenhuma parcela cadastrada. Crie parcelas na aba Vendas → Detalhes → Pagamentos.</div>';return;}
+  // ordenar: atrasadas primeiro, depois pendentes por vencimento, depois recebidas
+  const sorted=[
+    ...parcelas.filter(p=>p.status==='Pendente'&&diasAte(p.data_vencimento)<0).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1),
+    ...parcelas.filter(p=>p.status==='Pendente'&&(diasAte(p.data_vencimento)>=0||!p.data_vencimento)).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1),
+    ...parcelas.filter(p=>p.status==='Recebido').sort((a,b)=>b.data_recebimento>a.data_recebimento?1:-1),
+  ];
+  el.innerHTML=`<table><tr><th>Cliente</th><th>Serviço</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr>
+  ${sorted.map(p=>{
+    const d=diasAte(p.data_vencimento);
+    const atrasado=p.status==='Pendente'&&d!==null&&d<0;
+    const prazoStr=p.data_vencimento?`${fmtData(p.data_vencimento)} <span style="font-size:11px;color:${atrasado?'var(--red)':d<=5?'var(--amber)':'var(--text3)'}">${atrasado?'(atrasado)':d===0?'(hoje)':d<=5?`(${d}d)`:''}</span>`:'—';
+    return`<tr>
+      <td><strong>${p.cliente_nome||'—'}</strong></td>
+      <td style="font-size:12px;color:var(--text2)">${p.venda_servico||'—'}</td>
+      <td><span class="badge b-gray">${p.numero}/${p.total_parcelas}</span></td>
+      <td>${prazoStr}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500">${fmt(p.valor)}</td>
+      <td>${badge(atrasado?'Atrasado':p.status)}</td>
+      <td><div class="btn-group">
+        ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="marcarRecebidoFin('${p.id}')">Recebido ✓</button>`:''}
+        ${p.status==='Recebido'?`<span style="font-size:11px;color:var(--text3)">Recebido em ${fmtData(p.data_recebimento)}</span>`:''}
+      </div></td>
+    </tr>`;
+  }).join('')}</table>`;
+}
+
+async function marcarRecebidoFin(parcelaId){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const{error}=await SB.from('parcelas').update({status:'Recebido',data_recebimento:hoje()}).eq('id',parcelaId);
+  if(error){alert('Erro ao atualizar: '+error.message);return;}
+  await log('Financeiro','Parcela marcada como recebida','Recebido');
+  await Promise.all([renderFinanceiro(),renderDashboard(),renderVendas()]);
+}
+
+async function renderLancFiltro(tipo){
+  const{data}=await SB.from('lancamentos').select('*').eq('tipo',tipo).order('data_lancamento',{ascending:false});
+  const tpl=(lista)=>{
+    if(!lista||!lista.length)return`<div class="empty">Nenhum lançamento de ${tipo.toLowerCase()} ainda.</div>`;
+    return`<table><tr><th>Data</th><th>Descrição</th><th>Origem</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
+    ${lista.map(l=>`<tr><td>${fmtData(l.data_lancamento)}</td><td>${l.descricao}</td><td>${l.origem||'—'}</td><td style="font-weight:500;color:${tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${fmt(l.valor)}</td><td>${badge(l.status)}</td>${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:''}</tr>`).join('')}</table>`;
+  };
+  document.getElementById(tipo==='Receita'?'tabela-lanc-rec':'tabela-lanc-des').innerHTML=tpl(data);
+}
+
+async function salvarLancamento(){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const desc=document.getElementById('l-desc').value.trim();
+  const valor=document.getElementById('l-valor').value;
+  if(!desc||!valor){alert('Preencha descrição e valor.');return;}
+  const tipo=document.getElementById('l-tipo').value;
+  const status=document.getElementById('l-status').value;
+  const{error}=await SB.from('lancamentos').insert({tipo,descricao:desc,valor:Number(valor),data_lancamento:document.getElementById('l-data').value||hoje(),origem:document.getElementById('l-origem').value,status,criado_por:USER.id});
+  if(error){alert('Erro: '+error.message);return;}
+  closeModal('modal-lancamento');
+  ['l-desc','l-valor','l-origem'].forEach(id=>document.getElementById(id).value='');
+  await log('Financeiro',`${tipo}: ${desc} — ${fmt(valor)}`,status);
+  renderFinanceiro();renderDashboard();
+}
+
+// ── FUNCIONÁRIOS ─────────────────────────────────────────────
+async function renderFuncionarios(){
+  const{data}=await SB.from('funcionarios').select('*').order('nome');
+  const f=data||[];
+  document.getElementById('rh-total').textContent=f.length;
+  document.getElementById('rh-ativos').textContent=f.filter(x=>x.status==='Ativo').length;
+  document.getElementById('rh-folha').textContent=fmt(f.filter(x=>x.status==='Ativo').reduce((s,x)=>s+Number(x.salario||0),0));
+  const el=document.getElementById('tabela-func');
+  if(!f.length){el.innerHTML='<div class="empty">Nenhum funcionário cadastrado.</div>';return;}
+  el.innerHTML=`<table><tr><th>Nome</th><th>Cargo</th><th>Regime</th><th>Admissão</th><th>Salário</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
+  ${f.map(x=>`<tr><td><strong>${x.nome}</strong>${x.telefone?`<br><span style="font-size:11px;color:var(--text3)">${x.telefone}</span>`:''}</td><td>${x.cargo}</td><td><span class="badge b-gray" style="font-size:10px">${x.regime}</span></td><td>${fmtData(x.data_admissao)}</td><td style="font-family:'DM Mono',monospace;font-size:12px">${x.salario?fmt(x.salario):'—'}</td><td>${badge(x.status)}</td>${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluir('funcionarios','${x.id}')">Excluir</button></td>`:''}</tr>`).join('')}</table>`;
+}
+
+async function salvarFuncionario(){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const nome=document.getElementById('rh-nome').value.trim();
+  const cargo=document.getElementById('rh-cargo').value.trim();
+  if(!nome||!cargo){alert('Preencha nome e cargo.');return;}
+  const{error}=await SB.from('funcionarios').insert({nome,cargo,cpf:document.getElementById('rh-cpf').value,salario:Number(document.getElementById('rh-salario').value||0),data_admissao:document.getElementById('rh-admissao').value||null,regime:document.getElementById('rh-regime').value,telefone:document.getElementById('rh-tel').value,status:document.getElementById('rh-status').value,criado_por:USER.id});
+  if(error){alert('Erro: '+error.message);return;}
+  closeModal('modal-func');['rh-nome','rh-cpf','rh-cargo','rh-salario','rh-tel'].forEach(id=>document.getElementById(id).value='');
+  await log('RH','Novo funcionário: '+nome,'Concluído');renderFuncionarios();
+}
+
+// ── BOMBEIROS ─────────────────────────────────────────────────
+async function renderBombeiros(){
+  const{data}=await SB.from('processos_cb').select('*').order('criado_em',{ascending:false});
+  const procs=data||[];
+  const alertas=document.getElementById('alertas-cb');alertas.innerHTML='';
+  procs.filter(p=>{const d=diasAte(p.prazo);return d!==null&&d<=7&&d>=0;}).forEach(p=>alertas.innerHTML+=`<div class="alert alert-red">⚠ ${p.cliente_nome} — ${p.tipo}: prazo em ${diasAte(p.prazo)} dia(s)</div>`);
+  const el=document.getElementById('tabela-cb');
+  if(!procs.length){el.innerHTML='<div class="empty">Nenhum processo cadastrado.</div>';return;}
+  el.innerHTML=`<table><tr><th>Cliente</th><th>Tipo</th><th>Protocolo</th><th>Etapa</th><th>Prazo</th><th>Ações</th></tr>
+  ${procs.map(p=>{
+    const d=diasAte(p.prazo);
+    const prazoStr=p.prazo?`${fmtData(p.prazo)} <span style="font-size:11px;color:${d<0?'var(--red)':d<=7?'var(--amber)':'var(--text3)'}">${d<0?'(vencido)':d===0?'(hoje)':d<=7?`(${d}d)`:''}</span>`:'—';
+    return`<tr><td><strong>${p.cliente_nome}</strong></td><td>${p.tipo}</td><td style="font-family:'DM Mono',monospace;font-size:12px">${p.protocolo||'—'}</td><td>${badge(p.etapa)}</td><td>${prazoStr}</td><td><div class="btn-group"><button class="btn btn-sm" onclick="verTimeline('${p.id}')">Timeline</button>${podeEditar()?`<button class="btn btn-sm" onclick="avancarEtapa('${p.id}')">Avançar</button>`:''}${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('processos_cb','${p.id}')">Excluir</button>`:''}</div></td></tr>`;
+  }).join('')}</table>`;
+}
+
+async function salvarProcesso(){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const cid=document.getElementById('b-cliente').value;
+  if(!cid){alert('Selecione o cliente.');return;}
+  const{data:cli}=await SB.from('clientes').select('nome').eq('id',cid).single();
+  const tipo=document.getElementById('b-tipo').value;
+  const{error}=await SB.from('processos_cb').insert({cliente_id:cid,cliente_nome:cli?.nome||'',tipo,protocolo:document.getElementById('b-protocolo').value,prazo:document.getElementById('b-prazo').value||null,etapa:document.getElementById('b-etapa').value,observacoes:document.getElementById('b-obs').value,criado_por:USER.id});
+  if(error){alert('Erro: '+error.message);return;}
+  closeModal('modal-processo');
+  ['b-protocolo','b-obs'].forEach(id=>document.getElementById(id).value='');
+  await log('Bombeiros',`Processo ${tipo} — ${cli?.nome||''}`,document.getElementById('b-etapa').value);
+  renderBombeiros();renderDashboard();
+}
+
+async function verTimeline(id){
+  const{data:p}=await SB.from('processos_cb').select('*').eq('id',id).single();
+  if(!p)return;
+  const idx=ETAPAS_CB.indexOf(p.etapa);
+  document.getElementById('timeline-wrap').innerHTML=`<div class="card"><div class="card-header"><div class="card-title">Timeline — ${p.cliente_nome} (${p.tipo})</div></div><div class="timeline">${ETAPAS_CB.map((e,i)=>`<div class="tl-item"><div class="tl-dot ${i<idx?'done':i===idx?'current':'wait'}">${i<idx?'✓':i===idx?'●':'○'}</div><div class="tl-info"><strong>${e}</strong><p>${i<idx?'Concluído':i===idx?'Em andamento':'Aguardando'}</p></div></div>`).join('')}</div></div>`;
+  document.getElementById('timeline-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function avancarEtapa(id){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const{data:p}=await SB.from('processos_cb').select('*').eq('id',id).single();
+  const idx=ETAPAS_CB.indexOf(p.etapa);
+  if(idx>=ETAPAS_CB.length-1){alert('Processo já na etapa final.');return;}
+  const novaEtapa=ETAPAS_CB[idx+1];
+  await SB.from('processos_cb').update({etapa:novaEtapa}).eq('id',id);
+  await log('Bombeiros',`${p.cliente_nome}: avançado para "${novaEtapa}"`,novaEtapa);
+  renderBombeiros();
+}
+
+// ── USUÁRIOS ─────────────────────────────────────────────────
+async function renderUsuarios(){
+  if(!isAdmin()){document.getElementById('tabela-usuarios').innerHTML='<div class="empty">Acesso restrito a administradores.</div>';return;}
+  const{data}=await SB.from('perfis').select('*').order('nome');
+  const el=document.getElementById('tabela-usuarios');
+  if(!data||!data.length){el.innerHTML='<div class="empty">Nenhum usuário.</div>';return;}
+  el.innerHTML=`<table><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Status</th><th>Ações</th></tr>
+  ${data.map(u=>`<tr><td><strong>${u.nome}</strong></td><td>${u.email}</td><td>${badge(u.nivel==='admin'?'Admin':u.nivel==='edicao'?'Edição':'Visualização')}</td><td>${badge(u.ativo?'Ativo':'Inativo')}</td><td>${u.id!==USER.id?`<div class="btn-group"><select onchange="alterarNivel('${u.id}',this.value)" style="padding:4px 8px;font-size:12px;border:0.5px solid var(--border2);border-radius:6px;font-family:inherit"><option value="visualizacao" ${u.nivel==='visualizacao'?'selected':''}>Visualização</option><option value="edicao" ${u.nivel==='edicao'?'selected':''}>Edição</option><option value="admin" ${u.nivel==='admin'?'selected':''}>Admin</option></select><button class="btn btn-sm btn-danger" onclick="toggleAtivo('${u.id}',${u.ativo})">${u.ativo?'Desativar':'Ativar'}</button></div>`:'<span style="font-size:12px;color:var(--text3)">Você</span>'}</td></tr>`).join('')}</table>`;
+}
+async function alterarNivel(uid,nivel){await SB.from('perfis').update({nivel}).eq('id',uid);renderUsuarios();}
+async function toggleAtivo(uid,ativo){await SB.from('perfis').update({ativo:!ativo}).eq('id',uid);renderUsuarios();}
+async function convidarUsuario(){
+  const email=document.getElementById('u-email').value.trim();
+  const nome=document.getElementById('u-nome').value.trim();
+  const nivel=document.getElementById('u-nivel').value;
+  if(!email||!nome){alert('Preencha nome e e-mail.');return;}
+  await SB.auth.signUp({email,password:Math.random().toString(36).slice(2)+'A1!',options:{data:{nome,nivel},emailRedirectTo:window.location.href}});
+  closeModal('modal-usuario');
+  alert(`Convite enviado para ${email}! O usuário receberá um e-mail para definir a senha.`);
+  await log('Usuários',`Convite enviado para ${email} — nível: ${nivel}`,'Pendente');
+  renderUsuarios();
+}
+
+// ── EXCLUIR ───────────────────────────────────────────────────
+async function excluir(tabela,id){
+  if(!podeExcluir()){alert('Apenas administradores podem excluir registros.');return;}
+  if(!confirm('Confirma a exclusão deste registro?'))return;
+  await SB.from(tabela).delete().eq('id',id);
+  const fn={clientes:renderClientes,vendas:renderVendas,lancamentos:renderFinanceiro,funcionarios:renderFuncionarios,processos_cb:renderBombeiros};
+  if(fn[tabela])fn[tabela]();
+  renderDashboard();
+}
+
+
+
+// ══════════════════════════════════════════════════════════════
+// ── ORÇAMENTOS ────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+let _orcamentos=[], _itensOrc=[], _clientesOrc=[];
+
+const EMPRESA={
+  nome:'FIRESTOP ENGENHARIA',
+  cnpj:'41.465.438/0001-22',
+  telefone:'(84) 99934-9353',
+  email:'firestopengenharia@gmail.com',
+};
+
+async function renderOrcamentos(){
+  const{data}=await SB.from('orcamentos').select('*').order('numero',{ascending:false});
+  _orcamentos=data||[];
+  const aprov=_orcamentos.filter(o=>o.status==='Aprovado');
+  const env=_orcamentos.filter(o=>o.status==='Enviado');
+  document.getElementById('orc-total').textContent=_orcamentos.length;
+  document.getElementById('orc-enviados').textContent=env.length;
+  document.getElementById('orc-aprovados').textContent=aprov.length;
+  document.getElementById('orc-valor').textContent=fmt(aprov.reduce((s,o)=>s+Number(o.valor_total||0),0));
+  renderTabelaOrcamentos(_orcamentos);
+}
+
+function buscarOrcamentos(q){
+  renderTabelaOrcamentos(_orcamentos.filter(o=>
+    (o.cliente_nome||'').toLowerCase().includes(q.toLowerCase())||
+    (o.titulo||'').toLowerCase().includes(q.toLowerCase())
+  ));
+}
+
+function renderTabelaOrcamentos(lista){
+  const el=document.getElementById('tabela-orcamentos');
+  if(!lista.length){el.innerHTML='<div class="empty">Nenhuma proposta. Clique em "+ Nova proposta" para começar.</div>';return;}
+  const cor={Rascunho:'b-gray',Enviado:'b-blue',Aprovado:'b-green',Reprovado:'b-red',Cancelado:'b-gray'};
+  el.innerHTML=`<table>
+    <tr><th>Nº</th><th>Cliente</th><th>Título</th><th>Emissão</th><th>Válido até</th><th>Total</th><th>Status</th><th>Ações</th></tr>
+    ${lista.map(o=>{
+      const venc=o.data_emissao&&o.validade_dias?new Date(new Date(o.data_emissao+'T12:00:00').getTime()+o.validade_dias*86400000).toISOString().split('T')[0]:null;
+      const d=venc?diasAte(venc):null;
+      const atrasado=d!==null&&d<0&&!['Aprovado','Cancelado','Reprovado'].includes(o.status);
+      return`<tr>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text3)">Nº ${String(o.numero||0).padStart(5,'0')}</td>
+        <td><strong>${o.cliente_nome||'—'}</strong></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.titulo||'—'}</td>
+        <td>${fmtData(o.data_emissao)}</td>
+        <td>${venc?`${fmtData(venc)}<br><span style="font-size:10px;color:${atrasado?'var(--red)':d<=3?'var(--amber)':'var(--text3)'}">
+          ${atrasado?'vencido':d===0?'hoje':d+'d'}</span>`:'—'}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600">${fmt(o.valor_total||0)}</td>
+        <td><span class="badge ${cor[o.status]||'b-gray'}">${o.status}</span></td>
+        <td><div class="btn-group">
+          <button class="btn btn-sm" onclick="abrirOrcamento('${o.id}')">Editar</button>
+          <button class="btn btn-sm" onclick="abrirPreviewOrc('${o.id}')">Ver proposta</button>
+          ${['Rascunho','Enviado'].includes(o.status)&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="confirmarContratacao('${o.id}')">Confirmar contrato</button>`:''}
+          ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluirOrc('${o.id}')">Excluir</button>`:''}
+        </div></td>
+      </tr>`;
+    }).join('')}</table>`;
+}
+
+// ── ABRIR MODAL ───────────────────────────────────────────────
+function _resetModalOrc(){
+  document.querySelectorAll('#modal-orcamento .modal-tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('#modal-orcamento .modal-pane').forEach((p,i)=>p.classList.toggle('active',i===0));
+}
+
+async function novoOrcamento(){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  ORC_ATIVO=null; _itensOrc=[];
+  document.getElementById('orc-modal-titulo').textContent='Nova proposta comercial';
+  ['orc-titulo','orc-responsavel','orc-cliente-doc','orc-cliente-end','orc-cliente-cidade','orc-prazo','orc-cond-pagto','orc-obs'].forEach(id=>{
+    const e=document.getElementById(id);if(e)e.value='';
+  });
+  document.getElementById('orc-data').value=hoje();
+  document.getElementById('orc-validade').value='10';
+  document.getElementById('orc-desconto').value='0';
+  document.getElementById('orc-status').value='Rascunho';
+  // Bloqueia abas que precisam de ID salvo
+  ['orc-alerta-itens','orc-alerta-cond','orc-alerta-preview'].forEach(id=>document.getElementById(id).style.display='flex');
+  ['orc-itens-conteudo','orc-cond-conteudo','orc-preview-conteudo'].forEach(id=>document.getElementById(id).style.display='none');
+  _resetModalOrc();
+  await popularSelectOrc();
+  document.getElementById('modal-orcamento').classList.add('open');
+}
+
+async function abrirOrcamento(id){
+  ORC_ATIVO=id;
+  const[{data:o},{data:itens}]=await Promise.all([
+    SB.from('orcamentos').select('*').eq('id',id).single(),
+    SB.from('itens_orcamento').select('*').eq('orcamento_id',id).order('numero_item'),
+  ]);
+  _itensOrc=itens||[];
+  await popularSelectOrc();
+  document.getElementById('orc-modal-titulo').textContent=`Proposta Nº ${String(o.numero||0).padStart(5,'0')}`;
+  document.getElementById('orc-cliente').value=o.cliente_id||'';
+  document.getElementById('orc-cliente-doc').value=o.cliente_doc||'';
+  document.getElementById('orc-cliente-end').value=o.cliente_end||'';
+  document.getElementById('orc-cliente-cidade').value=o.cliente_cidade||'';
+  document.getElementById('orc-titulo').value=o.titulo||'';
+  document.getElementById('orc-responsavel').value=o.responsavel||'';
+  document.getElementById('orc-data').value=o.data_emissao||hoje();
+  document.getElementById('orc-validade').value=o.validade_dias||10;
+  document.getElementById('orc-status').value=o.status||'Rascunho';
+  document.getElementById('orc-desconto').value=o.desconto||0;
+  document.getElementById('orc-prazo').value=o.prazo_execucao||'';
+  document.getElementById('orc-cond-pagto').value=o.cond_pagto||'';
+  document.getElementById('orc-obs').value=o.observacoes||'';
+  ['orc-alerta-itens','orc-alerta-cond','orc-alerta-preview'].forEach(id=>document.getElementById(id).style.display='none');
+  ['orc-itens-conteudo','orc-cond-conteudo','orc-preview-conteudo'].forEach(id=>document.getElementById(id).style.display='block');
+  _resetModalOrc();
+  renderItensOrc();
+  document.getElementById('modal-orcamento').classList.add('open');
+}
+
+async function abrirPreviewOrc(id){
+  await abrirOrcamento(id);
+  document.querySelectorAll('#modal-orcamento .modal-tab').forEach((t,i)=>t.classList.toggle('active',i===3));
+  document.querySelectorAll('#modal-orcamento .modal-pane').forEach((p,i)=>p.classList.toggle('active',i===3));
+  gerarPreviewDoc();
+}
+
+async function popularSelectOrc(){
+  const{data:cl}=await SB.from('clientes').select('id,nome,documento,cidade').order('nome');
+  _clientesOrc=cl||[];
+  const s=document.getElementById('orc-cliente');
+  const cur=s.value;
+  s.innerHTML='<option value="">Selecione o cliente...</option>';
+  _clientesOrc.forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.nome}</option>`);
+  s.value=cur;
+}
+
+async function preencherDadosCliente(){
+  const cid=document.getElementById('orc-cliente').value;
+  const cli=_clientesOrc.find(c=>c.id===cid);
+  if(!cli)return;
+  document.getElementById('orc-cliente-doc').value=cli.documento||'';
+  document.getElementById('orc-cliente-cidade').value=cli.cidade||'';
+}
+
+// ── SALVAR ────────────────────────────────────────────────────
+async function salvarOrcamento(){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const cid=document.getElementById('orc-cliente').value;
+  const titulo=document.getElementById('orc-titulo').value.trim();
+  if(!cid||!titulo){alert('Selecione o cliente e informe o título.');return;}
+  const cli=_clientesOrc.find(c=>c.id===cid)||{};
+  const desconto=parseFloat(document.getElementById('orc-desconto').value||0);
+  const subtotal=_itensOrc.reduce((s,i)=>s+Number(i.valor_total||0),0);
+  const total=Math.max(0,subtotal-desconto);
+  const payload={
+    cliente_id:cid,cliente_nome:cli.nome||'',
+    cliente_doc:document.getElementById('orc-cliente-doc').value,
+    cliente_end:document.getElementById('orc-cliente-end').value,
+    cliente_cidade:document.getElementById('orc-cliente-cidade').value,
+    titulo,responsavel:document.getElementById('orc-responsavel').value,
+    data_emissao:document.getElementById('orc-data').value||hoje(),
+    validade_dias:parseInt(document.getElementById('orc-validade').value||10),
+    status:document.getElementById('orc-status').value,
+    desconto,subtotal,valor_total:total,
+    prazo_execucao:document.getElementById('orc-prazo').value,
+    cond_pagto:document.getElementById('orc-cond-pagto').value,
+    observacoes:document.getElementById('orc-obs').value,
+  };
+  if(ORC_ATIVO){
+    const{error}=await SB.from('orcamentos').update(payload).eq('id',ORC_ATIVO);
+    if(error){alert('Erro ao salvar: '+error.message);return;}
+    await log('Orçamento',`Proposta atualizada — ${cli.nome}: ${titulo}`,payload.status);
+  } else {
+    const{count}=await SB.from('orcamentos').select('*',{count:'exact',head:true});
+    payload.numero=(count||0)+1;
+    payload.criado_por=USER.id;
+    const{data:novo,error}=await SB.from('orcamentos').insert(payload).select().single();
+    if(error){alert('Erro ao criar: '+error.message);return;}
+    ORC_ATIVO=novo.id;
+    document.getElementById('orc-modal-titulo').textContent=`Proposta Nº ${String(novo.numero).padStart(5,'0')}`;
+    ['orc-alerta-itens','orc-alerta-cond','orc-alerta-preview'].forEach(id=>document.getElementById(id).style.display='none');
+    ['orc-itens-conteudo','orc-cond-conteudo','orc-preview-conteudo'].forEach(id=>document.getElementById(id).style.display='block');
+    document.getElementById('item-num').value='1';
+    await log('Orçamento',`Nova proposta Nº ${novo.numero} — ${cli.nome}: ${titulo}`,payload.status);
+  }
+  renderOrcamentos();
+  renderItensOrc();
+}
+
+// ── ITENS ─────────────────────────────────────────────────────
+function calcItemTotal(){
+  const qtd=parseFloat(document.getElementById('item-qtd').value||0);
+  const val=parseFloat(document.getElementById('item-valor').value||0);
+  document.getElementById('item-total-preview').value=fmt(qtd*val);
+}
+
+async function adicionarItem(){
+  if(!ORC_ATIVO){alert('Salve a proposta primeiro, depois adicione itens.');return;}
+  const desc=document.getElementById('item-desc').value.trim();
+  const qtd=parseFloat(document.getElementById('item-qtd').value||0);
+  const val=parseFloat(document.getElementById('item-valor').value||0);
+  if(!desc||!qtd||!val){alert('Preencha a descrição, quantidade e valor.');return;}
+  const num=parseInt(document.getElementById('item-num').value||_itensOrc.length+1);
+  const{data,error}=await SB.from('itens_orcamento').insert({
+    orcamento_id:ORC_ATIVO,numero_item:num,descricao:desc,
+    quantidade:qtd,valor_unitario:val,valor_total:parseFloat((qtd*val).toFixed(2)),
+    prazo_dias:parseInt(document.getElementById('item-prazo').value||0),
+    status_execucao:'Pendente',criado_por:USER.id
+  }).select().single();
+  if(error){alert('Erro: '+error.message);return;}
+  _itensOrc.push(data);
+  _itensOrc.sort((a,b)=>a.numero_item-b.numero_item);
+  document.getElementById('item-desc').value='';
+  document.getElementById('item-qtd').value='1';
+  document.getElementById('item-valor').value='';
+  document.getElementById('item-total-preview').value='R$ 0,00';
+  document.getElementById('item-prazo').value='';
+  document.getElementById('item-num').value=_itensOrc.length+1;
+  await _recalcOrcDB();
+  renderItensOrc();
+}
+
+async function removerItem(id){
+  if(!confirm('Remover este item?'))return;
+  await SB.from('itens_orcamento').delete().eq('id',id);
+  _itensOrc=_itensOrc.filter(i=>i.id!==id);
+  _itensOrc.forEach((it,idx)=>it.numero_item=idx+1);
+  document.getElementById('item-num').value=_itensOrc.length+1;
+  await _recalcOrcDB();
+  renderItensOrc();
+}
+
+async function _recalcOrcDB(){
+  if(!ORC_ATIVO)return;
+  const subtotal=_itensOrc.reduce((s,i)=>s+Number(i.valor_total||0),0);
+  const desconto=parseFloat(document.getElementById('orc-desconto')?.value||0);
+  const total=Math.max(0,subtotal-desconto);
+  await SB.from('orcamentos').update({subtotal,valor_total:total}).eq('id',ORC_ATIVO);
+  renderOrcamentos();
+}
+
+function renderItensOrc(){
+  const el=document.getElementById('lista-itens-orc');
+  if(!_itensOrc.length){
+    el.innerHTML='<div style="text-align:center;padding:24px;font-size:13px;color:var(--text3)">Nenhum item ainda. Use o formulário acima.</div>';
+    document.getElementById('totais-orc').innerHTML='';
+    return;
+  }
+  el.innerHTML=`<table>
+    <tr>
+      <th style="width:44px">Item</th><th>Produto / Serviço</th>
+      <th style="width:60px;text-align:center">Qtd</th>
+      <th style="width:130px;text-align:right">Valor unit.</th>
+      <th style="width:130px;text-align:right">Valor total</th>
+      ${podeEditar()?'<th style="width:36px"></th>':''}
+    </tr>
+    ${_itensOrc.map(i=>`<tr>
+      <td style="text-align:center;font-weight:700;color:var(--text2)">${String(i.numero_item).padStart(2,'0')}</td>
+      <td style="line-height:1.4">${i.descricao}${i.prazo_dias?`<span style="font-size:10px;color:var(--text3);margin-left:6px">(${i.prazo_dias}d)</span>`:''}</td>
+      <td style="text-align:center">${i.quantidade}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">${fmt(i.valor_unitario)}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-weight:600">${fmt(i.valor_total)}</td>
+      ${podeEditar()?`<td><button class="btn btn-sm btn-danger" onclick="removerItem('${i.id}')">✕</button></td>`:''}
+    </tr>`).join('')}
+  </table>`;
+  const subtotal=_itensOrc.reduce((s,i)=>s+Number(i.valor_total||0),0);
+  const desconto=parseFloat(document.getElementById('orc-desconto')?.value||0);
+  const total=Math.max(0,subtotal-desconto);
+  document.getElementById('totais-orc').innerHTML=`
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <div style="min-width:300px;background:var(--surface2);border-radius:var(--r);padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:0.5px solid var(--border)">
+          <span style="color:var(--text2)">SUBTOTAL</span><span style="font-family:'DM Mono',monospace">${fmt(subtotal)}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:0.5px solid var(--border)">
+          <span style="color:var(--text2)">DESCONTO</span>
+          <span style="font-family:'DM Mono',monospace;color:${desconto>0?'var(--red)':'var(--text3)'}">${desconto>0?'- '+fmt(desconto):'R$ 0,00'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:700">
+          <span>TOTAL</span><span style="font-family:'DM Mono',monospace;color:var(--blue)">${fmt(total)}</span></div>
+      </div>
+    </div>`;
+}
+
+// ── PREVIEW FIEL AO MODELO FIRESTOP ──────────────────────────
+async function gerarPreviewDoc(){
+  if(!ORC_ATIVO)return;
+  const[{data:o},{data:itens}]=await Promise.all([
+    SB.from('orcamentos').select('*').eq('id',ORC_ATIVO).single(),
+    SB.from('itens_orcamento').select('*').eq('orcamento_id',ORC_ATIVO).order('numero_item'),
+  ]);
+  if(!o)return;
+  const venc=o.data_emissao&&o.validade_dias?
+    new Date(new Date(o.data_emissao+'T12:00:00').getTime()+o.validade_dias*86400000).toISOString().split('T')[0]:null;
+  const rows=(itens||[]).map(i=>`
+    <tr>
+      <td style="padding:9px 8px;text-align:center;font-weight:700;border-bottom:1px solid #ddd;font-size:13px">${String(i.numero_item).padStart(2,'0')}</td>
+      <td style="padding:9px 10px;font-size:12px;border-bottom:1px solid #ddd;line-height:1.5">${i.descricao}</td>
+      <td style="padding:9px 8px;text-align:center;border-bottom:1px solid #ddd">${i.quantidade}</td>
+      <td style="padding:9px 10px;text-align:right;font-family:monospace;border-bottom:1px solid #ddd">R$ ${Number(i.valor_unitario).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      <td style="padding:9px 10px;text-align:right;font-family:monospace;font-weight:700;border-bottom:1px solid #ddd">R$ ${Number(i.valor_total).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+    </tr>`).join('');
+  document.getElementById('orc-preview-doc').innerHTML=`
+  <div id="doc-print" style="font-family:Arial,sans-serif;color:#1a1a1a;max-width:800px;margin:0 auto">
+    <table style="width:100%;border:1px solid #bbb;border-collapse:collapse">
+      <tr>
+        <td style="padding:16px 20px;width:50%;border-right:1px solid #bbb;vertical-align:middle">
+          <div style="font-size:26px;font-weight:900;color:#8b1a1a;letter-spacing:2px">FireStop</div>
+          <div style="font-size:9px;letter-spacing:4px;color:#666;text-transform:uppercase">Engenharia</div>
+        </td>
+        <td style="padding:12px 20px;text-align:right;vertical-align:top">
+          <div style="font-weight:700;font-size:13px;color:#8b1a1a">${EMPRESA.nome}</div>
+          <div style="font-size:11px;color:#444">CNPJ: ${EMPRESA.cnpj}</div>
+          <div style="font-size:11px;color:#444">Telefone: ${EMPRESA.telefone}</div>
+          <div style="font-size:11px;color:#444">E-mail: ${EMPRESA.email}</div>
+        </td>
+      </tr>
+    </table>
+    <table style="width:100%;border:1px solid #bbb;border-top:none;border-collapse:collapse">
+      <tr>
+        <td style="padding:10px 20px;border-right:1px solid #bbb;text-align:center;width:33%;font-size:13px">Orçamento n°: <strong>Nº ${String(o.numero||0).padStart(5,'0')}</strong></td>
+        <td style="padding:10px 20px;border-right:1px solid #bbb;text-align:center;width:33%;font-size:13px">Emitido em: <strong>${fmtData(o.data_emissao)}</strong></td>
+        <td style="padding:10px 20px;text-align:center;width:33%;font-size:13px">Válido até: <strong>${venc?fmtData(venc):'—'}</strong></td>
+      </tr>
+    </table>
+    <table style="width:100%;border:1px solid #bbb;border-top:none;border-collapse:collapse">
+      <tr><td colspan="2" style="background:#8b1a1a;color:#fff;text-align:center;padding:7px;font-weight:700;font-size:13px;letter-spacing:1px">CLIENTE</td></tr>
+      <tr><td style="padding:7px 10px;font-weight:700;font-size:12px;border:0.5px solid #ddd;width:100px">NOME</td><td style="padding:7px 10px;font-size:12px;border:0.5px solid #ddd">${o.cliente_nome||'—'}</td></tr>
+      <tr><td style="padding:7px 10px;font-weight:700;font-size:12px;border:0.5px solid #ddd">CPF/CNPJ</td><td style="padding:7px 10px;font-size:12px;border:0.5px solid #ddd">${o.cliente_doc||'—'}</td></tr>
+      ${o.cliente_end?`<tr><td style="padding:7px 10px;font-weight:700;font-size:12px;border:0.5px solid #ddd">LOGRADOURO</td><td style="padding:7px 10px;font-size:12px;border:0.5px solid #ddd">${o.cliente_end}</td></tr>`:''}
+      ${o.cliente_cidade?`<tr><td style="padding:7px 10px;font-weight:700;font-size:12px;border:0.5px solid #ddd">MUNICÍPIO</td><td style="padding:7px 10px;font-size:12px;border:0.5px solid #ddd">${o.cliente_cidade}</td></tr>`:''}
+      ${o.titulo?`<tr><td style="padding:7px 10px;font-weight:700;font-size:12px;border:0.5px solid #ddd">REFERÊNCIA</td><td style="padding:7px 10px;font-size:12px;border:0.5px solid #ddd;font-style:italic">${o.titulo}</td></tr>`:''}
+    </table>
+    <table style="width:100%;border:1px solid #bbb;border-top:none;border-collapse:collapse">
+      <tr><td colspan="5" style="background:#8b1a1a;color:#fff;text-align:center;padding:7px;font-weight:700;font-size:13px;letter-spacing:1px">ORÇAMENTO</td></tr>
+      <tr style="background:#f2f2f2">
+        <th style="padding:8px;text-align:center;font-size:12px;border:0.5px solid #ccc;width:44px">ITEM</th>
+        <th style="padding:8px 10px;text-align:left;font-size:12px;border:0.5px solid #ccc">PRODUTO/SERVIÇOS</th>
+        <th style="padding:8px;text-align:center;font-size:12px;border:0.5px solid #ccc;width:50px">QTD</th>
+        <th style="padding:8px;text-align:right;font-size:12px;border:0.5px solid #ccc;width:110px">VALOR UNITÁRIO</th>
+        <th style="padding:8px;text-align:right;font-size:12px;border:0.5px solid #ccc;width:110px">VALOR TOTAL</th>
+      </tr>
+      ${rows}
+    </table>
+    <table style="width:100%;border:1px solid #bbb;border-top:none;border-collapse:collapse">
+      <tr style="background:#f2f2f2">
+        <td style="padding:8px 10px;font-weight:700;font-size:12px;text-align:center;border:0.5px solid #ccc;width:25%">SUBTOTAL</td>
+        <td style="padding:8px 10px;font-weight:700;font-size:12px;text-align:center;border:0.5px solid #ccc;width:25%">DESCONTO</td>
+        <td style="padding:8px 10px;font-weight:700;font-size:12px;text-align:center;border:0.5px solid #ccc;width:25%">ACRÉSCIMO</td>
+        <td style="padding:8px 10px;font-weight:700;font-size:12px;text-align:center;border:0.5px solid #ccc;width:25%;background:#8b1a1a;color:#fff">TOTAL</td>
+      </tr>
+      <tr>
+        <td style="padding:9px 10px;text-align:center;font-size:13px;border:0.5px solid #ccc;font-family:monospace">R$ ${Number(o.subtotal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+        <td style="padding:9px 10px;text-align:center;font-size:13px;border:0.5px solid #ccc;font-family:monospace">R$ ${Number(o.desconto||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+        <td style="padding:9px 10px;text-align:center;font-size:13px;border:0.5px solid #ccc;font-family:monospace">R$ 0,00</td>
+        <td style="padding:9px 10px;text-align:center;font-size:14px;font-weight:700;border:0.5px solid #ccc;font-family:monospace;background:#fff8f8">R$ ${Number(o.valor_total||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+      </tr>
+    </table>
+    ${(o.prazo_execucao||o.cond_pagto||o.observacoes)?`
+    <table style="width:100%;border:1px solid #bbb;border-top:none;border-collapse:collapse">
+      <tr><td style="background:#8b1a1a;color:#fff;text-align:center;padding:7px;font-weight:700;font-size:13px;letter-spacing:1px">OBSERVAÇÕES</td></tr>
+      <tr><td style="padding:14px">
+        ${o.prazo_execucao?`<p style="margin-bottom:12px"><strong>PRAZO DO SERVIÇO</strong><br><span style="font-size:12px">${o.prazo_execucao}</span></p>`:''}
+        ${o.cond_pagto?`<p style="margin-bottom:12px"><strong>FORMAS DE PAGAMENTO</strong><br><span style="font-size:12px;white-space:pre-line">${o.cond_pagto}</span></p>`:''}
+        ${o.observacoes?`<p><strong>OUTRAS OBSERVAÇÕES</strong><br><span style="font-size:12px;white-space:pre-line">${o.observacoes}</span></p>`:''}
+      </td></tr>
+    </table>`:''}
+    ${o.responsavel?`<div style="margin-top:40px;text-align:center">
+      <div style="display:inline-block;border-top:1px solid #333;padding-top:8px;min-width:220px">
+        <div style="font-weight:700;font-size:13px">${o.responsavel.split('—')[0]?.trim()||o.responsavel}</div>
+        ${o.responsavel.includes('—')?`<div style="font-size:11px;color:#555">${o.responsavel.split('—')[1]?.trim()}</div>`:''}
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
+function imprimirOrcamento(){
+  const el=document.getElementById('doc-print');
+  if(!el){alert('Abra a aba "Visualizar / Imprimir" primeiro.');return;}
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proposta Comercial</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;padding:20px;color:#1a1a1a}
+  @media print{body{padding:0}@page{margin:10mm}}</style>
+  </head><body>${el.outerHTML}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),700);
+}
+
+function copiarLinkCliente(){
+  alert('O link do cliente estará disponível quando o portal de acompanhamento da obra for implementado!');
+}
+
+async function confirmarContratacao(id){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  if(!confirm('Confirmar a contratação?\n\nA proposta será marcada como "Aprovado" e ficará pronta para o Gráfico de Gantt.'))return;
+  await SB.from('orcamentos').update({status:'Aprovado'}).eq('id',id);
+  await log('Orçamento','Contrato confirmado','Aprovado');
+  alert('Contrato confirmado! Em breve você poderá associar ao Gráfico de Gantt.');
+  renderOrcamentos();
+}
+
+async function excluirOrc(id){
+  if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
+  if(!confirm('Excluir esta proposta e todos os seus itens?'))return;
+  await SB.from('itens_orcamento').delete().eq('orcamento_id',id);
+  await SB.from('orcamentos').delete().eq('id',id);
+  renderOrcamentos();
+}
+
+// Atualiza preview/itens ao trocar aba do modal de orçamento
+const _origSetModalTab=setModalTab;
+function setModalTab(el,paneId){
+  _origSetModalTab(el,paneId);
+  if(paneId==='orc-pane-preview'&&ORC_ATIVO) gerarPreviewDoc();
+  if(paneId==='orc-pane-itens'&&ORC_ATIVO) renderItensOrc();
+}
+// ── FIM ORÇAMENTOS ────────────────────────────────────────────
+
+// ── INIT ──────────────────────────────────────────────────────
+document.getElementById('l-data').value=hoje();
+document.getElementById('v-data').value=hoje();
+document.getElementById('p-inicio').value=hoje();
+document.getElementById('login-senha').addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+</script>
+</body>
+</html>
