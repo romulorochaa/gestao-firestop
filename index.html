@@ -310,6 +310,31 @@ tr:hover td{background:var(--surface2)}
       <div class="page" id="page-financeiro">
         <div class="page-title">Financeiro</div>
         <div class="page-sub">Controle de caixa, receitas, despesas e parcelas</div>
+
+        <!-- Filtro de período -->
+        <div class="card" style="margin-bottom:14px;padding:12px 16px">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em">Período</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm" id="f-btn-mes" onclick="setFiltroFin('mes')" style="background:var(--blue);color:#fff;border-color:var(--blue)">Mês atual</button>
+              <button class="btn btn-sm" id="f-btn-ano" onclick="setFiltroFin('ano')">Ano atual</button>
+              <button class="btn btn-sm" id="f-btn-tudo" onclick="setFiltroFin('tudo')">Tudo</button>
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;margin-left:4px">
+              <select id="f-sel-mes" onchange="setFiltroFin('custom')" style="padding:5px 8px;font-size:12px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;opacity:0.5">
+                <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+                <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+                <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+                <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+              </select>
+              <select id="f-sel-ano" onchange="setFiltroFin('custom')" style="padding:5px 8px;font-size:12px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;opacity:0.5">
+                <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option>
+              </select>
+            </div>
+            <span id="f-periodo-label" style="font-size:12px;color:var(--text3);margin-left:4px"></span>
+          </div>
+        </div>
+
         <div class="metrics">
           <div class="metric"><div class="metric-label">Saldo atual</div><div class="metric-value" id="f-saldo">—</div></div>
           <div class="metric"><div class="metric-label">Receitas confirmadas</div><div class="metric-value" id="f-rec">—</div></div>
@@ -1413,20 +1438,118 @@ async function marcarRecebido(parcelaId){
 }
 
 // ── FINANCEIRO ───────────────────────────────────────────────
+// ── FILTRO FINANCEIRO ─────────────────────────────────────────
+let _finFiltro = 'mes'; // 'mes' | 'ano' | 'tudo' | 'custom'
+
+function setFiltroFin(tipo){
+  _finFiltro = tipo;
+  const btns={mes:'f-btn-mes',ano:'f-btn-ano',tudo:'f-btn-tudo'};
+  Object.entries(btns).forEach(([t,id])=>{
+    const btn=document.getElementById(id);
+    if(!btn)return;
+    const ativo=tipo===t;
+    btn.style.background = ativo?'var(--blue)':'';
+    btn.style.color      = ativo?'#fff':'';
+    btn.style.borderColor= ativo?'var(--blue)':'';
+  });
+  // Selects habilitados só no modo custom
+  const selMes=document.getElementById('f-sel-mes');
+  const selAno=document.getElementById('f-sel-ano');
+  if(selMes) selMes.style.opacity = tipo==='custom'?'1':'0.5';
+  if(selAno) selAno.style.opacity = tipo==='custom'?'1':'0.5';
+  renderFinanceiro();
+}
+
+function _finGetFiltro(){
+  // Retorna { mes, ano } ou null para tudo
+  const now=new Date();
+  if(_finFiltro==='tudo') return null;
+  if(_finFiltro==='mes')  return {mes:now.getMonth()+1, ano:now.getFullYear()};
+  if(_finFiltro==='ano')  return {mes:null, ano:now.getFullYear()};
+  if(_finFiltro==='custom'){
+    const m=parseInt(document.getElementById('f-sel-mes')?.value||now.getMonth()+1);
+    const a=parseInt(document.getElementById('f-sel-ano')?.value||now.getFullYear());
+    return {mes:m, ano:a};
+  }
+  return null;
+}
+
+function _finFiltrarPorData(lista, campoData){
+  const f=_finGetFiltro();
+  if(!f) return lista;
+  return lista.filter(item=>{
+    const d=item[campoData];
+    if(!d) return false;
+    const dt=new Date(d+'T12:00:00');
+    if(f.ano && dt.getFullYear()!==f.ano) return false;
+    if(f.mes && dt.getMonth()+1!==f.mes)  return false;
+    return true;
+  });
+}
+
+function _finAtualizarLabel(){
+  const el=document.getElementById('f-periodo-label');
+  if(!el) return;
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const now=new Date();
+  if(_finFiltro==='mes')   el.textContent=`${meses[now.getMonth()]} ${now.getFullYear()}`;
+  else if(_finFiltro==='ano') el.textContent=`Ano ${now.getFullYear()}`;
+  else if(_finFiltro==='tudo') el.textContent='Todos os períodos';
+  else if(_finFiltro==='custom'){
+    const m=parseInt(document.getElementById('f-sel-mes')?.value||1);
+    const a=parseInt(document.getElementById('f-sel-ano')?.value||now.getFullYear());
+    el.textContent=`${meses[m-1]} ${a}`;
+  }
+}
+
 async function renderFinanceiro(){
-  const[{data:lanc},{data:parc}]=await Promise.all([
+  const now=new Date();
+  // Inicializa seletores com mês/ano corrente
+  const selMes=document.getElementById('f-sel-mes');
+  const selAno=document.getElementById('f-sel-ano');
+  if(selMes&&!selMes._inicializado){
+    selMes.value=String(now.getMonth()+1);
+    selMes._inicializado=true;
+  }
+  if(selAno&&!selAno._inicializado){
+    // Popula anos dinamicamente: 2024 até ano atual + 1
+    selAno.innerHTML='';
+    for(let y=2024;y<=now.getFullYear()+1;y++){
+      selAno.innerHTML+=`<option value="${y}">${y}</option>`;
+    }
+    selAno.value=String(now.getFullYear());
+    selAno._inicializado=true;
+  }
+
+  _finAtualizarLabel();
+
+  const[{data:lancAll},{data:parcAll}]=await Promise.all([
     SB.from('lancamentos').select('*').order('data_lancamento',{ascending:false}),
     SB.from('parcelas').select('*').order('data_vencimento'),
   ]);
-  // Receitas: lançamentos manuais confirmados + parcelas recebidas
-  const recLanc=(lanc||[]).filter(l=>l.tipo==='Receita'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
-  const recParc=(parc||[]).filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
+
+  // Aplica filtro nos lançamentos
+  const lanc=_finFiltrarPorData(lancAll||[], 'data_lancamento');
+  // Parcelas: filtro por vencimento (pendentes) ou recebimento (recebidas)
+  const parcFiltradas=(parcAll||[]).filter(p=>{
+    const f=_finGetFiltro();
+    if(!f) return true;
+    const campo=p.status==='Recebido'?(p.data_recebimento||p.data_vencimento):p.data_vencimento;
+    if(!campo) return false;
+    const dt=new Date(campo+'T12:00:00');
+    if(f.ano && dt.getFullYear()!==f.ano) return false;
+    if(f.mes && dt.getMonth()+1!==f.mes)  return false;
+    return true;
+  });
+
+  // Métricas do período filtrado
+  const recLanc=lanc.filter(l=>l.tipo==='Receita'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const recParc=parcFiltradas.filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
   const rec=recLanc+recParc;
-  // Despesas: apenas lançamentos manuais confirmados
-  const des=(lanc||[]).filter(l=>l.tipo==='Despesa'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
-  // Parcelas pendentes (a receber)
-  const pendParc=(parc||[]).filter(p=>p.status==='Pendente').reduce((s,p)=>s+Number(p.valor),0);
-  const atrasadas=(parc||[]).filter(p=>p.status==='Pendente'&&p.data_vencimento&&diasAte(p.data_vencimento)<0).length;
+  const des=lanc.filter(l=>l.tipo==='Despesa'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const pendParc=(parcAll||[]).filter(p=>p.status==='Pendente').reduce((s,p)=>s+Number(p.valor),0);
+  const atrasadas=(parcAll||[]).filter(p=>p.status==='Pendente'&&p.data_vencimento&&diasAte(p.data_vencimento)<0).length;
+
   document.getElementById('f-saldo').textContent=fmt(rec-des);
   document.getElementById('f-saldo').style.color=rec-des>=0?'var(--green)':'var(--red)';
   document.getElementById('f-rec').textContent=fmt(rec);
@@ -1434,14 +1557,14 @@ async function renderFinanceiro(){
   document.getElementById('f-pend').textContent=fmt(pendParc);
   document.getElementById('f-pend-sub').textContent=atrasadas>0?`${atrasadas} atrasada(s)`:'';
 
-  // Monta tabela "Todos": lançamentos manuais + parcelas recebidas, ordenados por data
-  const parcelasComoLanc=(parc||[]).filter(p=>p.status==='Recebido').map(p=>({
+  // Tabela "Todos": lançamentos do período + parcelas recebidas do período
+  const parcelasComoLanc=parcFiltradas.filter(p=>p.status==='Recebido').map(p=>({
     id:p.id,tipo:'Receita',
     data_lancamento:p.data_recebimento||p.data_vencimento,
     descricao:`Parcela ${p.numero}/${p.total_parcelas} — ${p.venda_servico||''}`,
     origem:p.cliente_nome,valor:p.valor,status:'Recebido',_parcela:true
   }));
-  const todos=[...(lanc||[]),...parcelasComoLanc].sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
+  const todos=[...lanc,...parcelasComoLanc].sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
 
   const tplRow=(l)=>{
     const catBadge=l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—';
@@ -1456,9 +1579,9 @@ async function renderFinanceiro(){
     </tr>`;
   };
   const thead=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição / Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>`;
+  document.getElementById('tabela-lanc').innerHTML=todos.length?thead+todos.map(tplRow).join('')+'</table>':'<div class="empty">Nenhum lançamento no período selecionado.</div>';
 
-  document.getElementById('tabela-lanc').innerHTML=todos.length?thead+todos.map(tplRow).join('')+'</table>':'<div class="empty">Nenhum lançamento ainda.</div>';
-  renderParcelasFinanceiro(parc);
+  renderParcelasFinanceiro(parcAll);
 }
 
 async function renderParcelasFinanceiro(parcelas){
@@ -1500,45 +1623,98 @@ async function marcarRecebidoFin(parcelaId){
 }
 
 async function renderLancFiltro(tipo){
-  const{data}=await SB.from('lancamentos').select('*').eq('tipo',tipo).order('data_lancamento',{ascending:false});
-  const lista=data||[];
   const el=document.getElementById(tipo==='Receita'?'tabela-lanc-rec':'tabela-lanc-des');
-  if(!lista.length){el.innerHTML=`<div class="empty">Nenhum lançamento de ${tipo.toLowerCase()} ainda.</div>`;return;}
 
-  // Para despesas: mostra totais por categoria no topo
+  // Busca lançamentos manuais do tipo
+  const{data:lancAll}=await SB.from('lancamentos').select('*').eq('tipo',tipo).order('data_lancamento',{ascending:false});
+  const lancFiltrados=_finFiltrarPorData(lancAll||[],'data_lancamento');
+
+  // Para Receitas: inclui também parcelas recebidas no período
+  let parcRecebidas=[];
+  if(tipo==='Receita'){
+    const{data:parc}=await SB.from('parcelas').select('*').eq('status','Recebido').order('data_recebimento',{ascending:false});
+    parcRecebidas=_finFiltrarPorData(parc||[],'data_recebimento').map(p=>({
+      _parcela:true,
+      id:p.id,
+      tipo:'Receita',
+      data_lancamento:p.data_recebimento||p.data_vencimento,
+      descricao:`Parcela ${p.numero}/${p.total_parcelas} — ${p.venda_servico||''}`,
+      origem:p.cliente_nome,
+      categoria:'Venda de serviços',
+      valor:p.valor,
+      status:'Recebido',
+    }));
+  }
+
+  // Une e ordena por data
+  const data=[...lancFiltrados,...parcRecebidas]
+    .sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
+
+  if(!data.length){
+    el.innerHTML=`<div class="empty">Nenhuma receita no período selecionado.</div>`;
+    if(tipo==='Despesa') el.innerHTML=`<div class="empty">Nenhuma despesa no período selecionado.</div>`;
+    return;
+  }
+
+  // Resumo para Receitas: total lançamentos manuais + total parcelas
   let resumoHtml='';
+  if(tipo==='Receita'){
+    const totalLanc=lancFiltrados.filter(l=>l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+    const totalParc=parcRecebidas.reduce((s,p)=>s+Number(p.valor),0);
+    const totalGeral=totalLanc+totalParc;
+    resumoHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
+        <span style="color:var(--text2)">Parcelas recebidas</span>
+        <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalParc)}</strong>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
+        <span style="color:var(--text2)">Lançamentos manuais</span>
+        <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalLanc)}</strong>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--green-bg);border:0.5px solid #a8d5a8;border-radius:20px;font-size:12px">
+        <span style="color:var(--text2)">Total receitas</span>
+        <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalGeral)}</strong>
+      </div>
+    </div>`;
+  }
+
+  // Resumo por categoria para Despesas
   if(tipo==='Despesa'){
     const CATS=['Material','Mão de obra','ART','Impostos','Operacional','Aluguel','Contabilidade','Investimentos','Terceiros','Retirada','Outros'];
     const totais={};
-    lista.filter(l=>l.status==='Confirmado').forEach(l=>{
+    data.filter(l=>l.status==='Confirmado').forEach(l=>{
       const c=l.categoria||'Outros';
       totais[c]=(totais[c]||0)+Number(l.valor);
     });
     const cats=CATS.filter(c=>totais[c]>0);
     if(cats.length){
+      const totalGeral=cats.reduce((s,c)=>s+totais[c],0);
       resumoHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
         ${cats.map(c=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
           <span style="color:var(--text2)">${c}</span>
           <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totais[c])}</strong>
         </div>`).join('')}
-        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--red-bg);border:0.5px solid #f5c0bc;border-radius:20px;font-size:12px">
-          <span style="color:var(--text2)">Total</span>
-          <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(cats.reduce((s,c)=>s+totais[c],0))}</strong>
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#fdecea;border:0.5px solid #f5c0bc;border-radius:20px;font-size:12px">
+          <span style="color:var(--text2)">Total despesas</span>
+          <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totalGeral)}</strong>
         </div>
       </div>`;
     }
   }
 
   const tabela=`<table>
-    <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
-    ${lista.map(l=>`<tr>
+    <tr>
+      <th>Data</th><th>Descrição</th><th>Categoria</th><th>Cliente / Obra</th>
+      <th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}
+    </tr>
+    ${data.map(l=>`<tr>
       <td>${fmtData(l.data_lancamento)}</td>
       <td>${l.descricao}</td>
       <td>${l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—'}</td>
       <td style="font-size:12px;color:var(--text2)">${l.origem||'—'}</td>
       <td style="font-weight:500;color:${tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${fmt(l.valor)}</td>
-      <td>${badge(l.status)}</td>
-      ${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:''}
+      <td>${badge(l._parcela?'Recebido':l.status)}</td>
+      ${podeExcluir()&&!l._parcela?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:(podeExcluir()?'<td></td>':'')}
     </tr>`).join('')}
   </table>`;
   el.innerHTML=resumoHtml+tabela;
