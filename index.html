@@ -788,12 +788,19 @@ function setTab(el,tabId){
 }
 
 function setModalTab(el,paneId){
-  el.closest('.modal-tabs').querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+  // Escopa apenas dentro do modal atual, não todos os modais
+  const modal=el.closest('.modal');
+  modal.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  document.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('active'));
-  document.getElementById(paneId).classList.add('active');
+  modal.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('active'));
+  const pane=document.getElementById(paneId);
+  if(pane)pane.classList.add('active');
+  // Callbacks para modal de vendas
   if(paneId==='mvpane-proposta'&&VENDA_ATIVA)carregarAnexos(VENDA_ATIVA);
   if(paneId==='mvpane-pagamentos'&&VENDA_ATIVA)carregarParcelas(VENDA_ATIVA);
+  // Callbacks para modal de orçamentos
+  if(paneId==='orc-pane-preview'&&ORC_ATIVO)gerarPreviewDoc();
+  if(paneId==='orc-pane-itens'&&ORC_ATIVO)renderItensOrc();
 }
 
 // ── MODAIS ────────────────────────────────────────────────────
@@ -1721,14 +1728,6 @@ async function excluirOrc(id){
   await SB.from('itens_orcamento').delete().eq('orcamento_id',id);
   await SB.from('orcamentos').delete().eq('id',id);
   renderOrcamentos();
-}
-
-// Atualiza preview/itens ao trocar aba do modal de orçamento
-const _origSetModalTab=setModalTab;
-function setModalTab(el,paneId){
-  _origSetModalTab(el,paneId);
-  if(paneId==='orc-pane-preview'&&ORC_ATIVO) gerarPreviewDoc();
-  if(paneId==='orc-pane-itens'&&ORC_ATIVO) renderItensOrc();
 }
 // ── FIM ORÇAMENTOS ────────────────────────────────────────────
 
