@@ -258,19 +258,97 @@ tr:hover td{background:var(--surface2)}
 
       <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
-        <div class="page-title">Visão geral</div>
-        <div class="page-sub" id="data-hoje"></div>
-        <div class="metrics">
-          <div class="metric"><div class="metric-label">Receita confirmada</div><div class="metric-value" id="d-receita">—</div><div class="metric-sub" id="d-receita-sub"></div></div>
-          <div class="metric"><div class="metric-label">Clientes ativos</div><div class="metric-value" id="d-clientes">—</div></div>
-          <div class="metric"><div class="metric-label">Processos CB</div><div class="metric-value" id="d-cb">—</div><div class="metric-sub" id="d-cb-sub"></div></div>
-          <div class="metric"><div class="metric-label">A receber (parcelas)</div><div class="metric-value" id="d-pendente">—</div><div class="metric-sub" id="d-pendente-sub"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+          <div>
+            <div class="page-title" style="margin-bottom:2px">Visão geral</div>
+            <div class="page-sub" id="data-hoje"></div>
+          </div>
+          <div id="d-mes-label" style="font-size:12px;color:var(--text3);padding-top:6px"></div>
         </div>
+
+        <!-- ALERTAS -->
         <div id="alertas-dash"></div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">Atividade recente</div></div>
-          <div id="dash-atividades"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+
+        <!-- SALDO DO MÊS — destaque principal -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px" id="d-grid-saldo">
+          <div class="card" style="border-left:4px solid var(--blue);padding:18px 20px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">Saldo do mês</div>
+            <div id="d-saldo-mes" style="font-size:32px;font-weight:700;font-family:'DM Mono',monospace;line-height:1">—</div>
+            <div id="d-saldo-sub" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
+          </div>
+          <div class="card" style="padding:18px 20px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">Receitas do mês</div>
+            <div id="d-rec-mes" style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--green)">—</div>
+            <div id="d-rec-sub" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
+          </div>
+          <div class="card" style="padding:18px 20px">
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:6px">Despesas do mês</div>
+            <div id="d-des-mes" style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--red)">—</div>
+            <div id="d-des-sub" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
+          </div>
         </div>
+
+        <!-- LINHA 2: métricas secundárias -->
+        <div class="metrics" style="margin-bottom:18px">
+          <div class="metric" style="cursor:pointer" onclick="showPage('financeiro',document.querySelector('[onclick*=\"financeiro\"]'))">
+            <div class="metric-label">A receber (parcelas)</div>
+            <div class="metric-value" id="d-pendente">—</div>
+            <div class="metric-sub down" id="d-pendente-sub"></div>
+          </div>
+          <div class="metric" style="cursor:pointer" onclick="showPage('clientes',document.querySelector('[onclick*=\"clientes\"]'))">
+            <div class="metric-label">Clientes ativos</div>
+            <div class="metric-value" id="d-clientes">—</div>
+          </div>
+          <div class="metric" style="cursor:pointer" onclick="showPage('bombeiros',document.querySelector('[onclick*=\"bombeiros\"]'))">
+            <div class="metric-label">Processos CB</div>
+            <div class="metric-value" id="d-cb">—</div>
+            <div class="metric-sub" id="d-cb-sub"></div>
+          </div>
+          <div class="metric" style="cursor:pointer" onclick="showPage('orcamentos',document.querySelector('[onclick*=\"orcamentos\"]'))">
+            <div class="metric-label">Propostas enviadas</div>
+            <div class="metric-value" id="d-prop-env">—</div>
+            <div class="metric-sub" id="d-prop-sub"></div>
+          </div>
+        </div>
+
+        <!-- LINHA 3: Parcelas vencendo + Pipeline + Obras -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+
+          <!-- Parcelas vencendo em breve -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Parcelas vencendo em 7 dias</div>
+              <button class="btn btn-sm" onclick="showPage('financeiro',document.querySelector('[onclick*=\"financeiro\"]'))">Ver todas</button>
+            </div>
+            <div id="d-parcelas-venc"></div>
+          </div>
+
+          <!-- Pipeline de propostas -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Pipeline de propostas</div>
+              <button class="btn btn-sm" onclick="showPage('orcamentos',document.querySelector('[onclick*=\"orcamentos\"]'))">Ver todas</button>
+            </div>
+            <div id="d-pipeline"></div>
+          </div>
+
+        </div>
+
+        <!-- Obras em andamento -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-header">
+            <div class="card-title">Obras em andamento</div>
+            <button class="btn btn-sm" onclick="showPage('gantt',document.querySelector('[onclick*=\"gantt\"]'))">Ver cronograma</button>
+          </div>
+          <div id="d-obras"></div>
+        </div>
+
+        <!-- Despesas por categoria -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-header"><div class="card-title">Despesas do mês por categoria</div></div>
+          <div id="d-categorias"></div>
+        </div>
+
       </div>
 
       <!-- CLIENTES -->
@@ -1166,35 +1244,189 @@ async function log(tipo,desc,status){
 
 // ── DASHBOARD ────────────────────────────────────────────────
 async function renderDashboard(){
-  const [{data:lanc},{data:cl},{data:procs},{data:parcelas}]=await Promise.all([
+  const now = new Date();
+  const mesAtual = now.getMonth()+1;
+  const anoAtual = now.getFullYear();
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // Label do mês
+  const mesLabel=document.getElementById('d-mes-label');
+  if(mesLabel) mesLabel.textContent=`${meses[mesAtual-1]} ${anoAtual}`;
+
+  // Busca tudo em paralelo
+  const[
+    {data:lancAll},
+    {data:cl},
+    {data:procs},
+    {data:parcAll},
+    {data:orcs},
+    {data:itensAll},
+  ]=await Promise.all([
     SB.from('lancamentos').select('*'),
     SB.from('clientes').select('status'),
     SB.from('processos_cb').select('*'),
-    SB.from('parcelas').select('*'),
+    SB.from('parcelas').select('*').order('data_vencimento'),
+    SB.from('orcamentos').select('id,numero,titulo,cliente_nome,valor_total,status').order('numero',{ascending:false}),
+    SB.from('itens_orcamento').select('orcamento_id,progresso,status_execucao,data_fim_prevista'),
   ]);
-  const recLanc=(lanc||[]).filter(l=>l.tipo==='Receita'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
-  const recParc=(parcelas||[]).filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
-  const rec=recLanc+recParc;
-  const ativos=(cl||[]).filter(c=>c.status==='Ativo').length;
-  const pendParcelas=(parcelas||[]).filter(p=>p.status==='Pendente').reduce((s,p)=>s+Number(p.valor),0);
-  const atrasadas=(parcelas||[]).filter(p=>p.status==='Pendente'&&diasAte(p.data_vencimento)<0).length;
-  document.getElementById('d-receita').textContent=fmt(rec);
-  document.getElementById('d-clientes').textContent=ativos;
-  document.getElementById('d-cb').textContent=(procs||[]).length;
+
+  // ── FINANCEIRO DO MÊS ─────────────────────────────────────
+  const filtroMes=l=>{
+    const d=(l.data_lancamento||l.data_recebimento||'');
+    if(!d) return false;
+    const dt=new Date(d.split('T')[0]+'T12:00:00');
+    return dt.getMonth()+1===mesAtual && dt.getFullYear()===anoAtual;
+  };
+
+  const lancMes=(lancAll||[]).filter(filtroMes);
+  const parcMes=(parcAll||[]).filter(p=>p.status==='Recebido'&&filtroMes({data_lancamento:p.data_recebimento||p.data_vencimento}));
+
+  const recLancMes=lancMes.filter(l=>l.tipo==='Receita'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const recParcMes=parcMes.reduce((s,p)=>s+Number(p.valor_recebido!=null?p.valor_recebido:p.valor),0);
+  const recMes=recLancMes+recParcMes;
+  const desMes=lancMes.filter(l=>l.tipo==='Despesa'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const saldoMes=recMes-desMes;
+
+  // Saldo destaque
+  const saldoEl=document.getElementById('d-saldo-mes');
+  saldoEl.textContent=fmt(saldoMes);
+  saldoEl.style.color=saldoMes>=0?'var(--green)':'var(--red)';
+  document.getElementById('d-saldo-sub').textContent=saldoMes>=0?'Resultado positivo no mês':'Resultado negativo no mês';
+  document.getElementById('d-rec-mes').textContent=fmt(recMes);
+  document.getElementById('d-rec-sub').textContent=`${parcMes.length} parcela(s) + ${lancMes.filter(l=>l.tipo==='Receita').length} lançamento(s)`;
+  document.getElementById('d-des-mes').textContent=fmt(desMes);
+
+  // Despesas por categoria no mês
+  const CATS=['Material','Mão de obra','ART','Impostos','Operacional','Aluguel','Contabilidade','Investimentos','Terceiros','Retirada','Outros'];
+  const totCat={};
+  lancMes.filter(l=>l.tipo==='Despesa'&&l.status==='Confirmado').forEach(l=>{
+    const c=l.categoria||'Outros'; totCat[c]=(totCat[c]||0)+Number(l.valor);
+  });
+  const catsUsadas=CATS.filter(c=>totCat[c]>0);
+  const catEl=document.getElementById('d-categorias');
+  if(!catsUsadas.length){
+    catEl.innerHTML='<div class="empty">Nenhuma despesa lançada este mês.</div>';
+  } else {
+    const maxVal=Math.max(...catsUsadas.map(c=>totCat[c]));
+    catEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:10px">
+      ${catsUsadas.map(c=>{
+        const pct=Math.round(totCat[c]/maxVal*100);
+        return`<div style="display:flex;align-items:center;gap:10px">
+          <div style="width:110px;font-size:12px;color:var(--text2);text-align:right;flex-shrink:0">${c}</div>
+          <div style="flex:1;background:var(--surface2);border-radius:3px;height:7px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:var(--red);border-radius:3px"></div>
+          </div>
+          <div style="font-size:12px;font-family:'DM Mono',monospace;color:var(--red);min-width:90px;text-align:right">${fmt(totCat[c])}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // ── MÉTRICAS SECUNDÁRIAS ───────────────────────────────────
+  const pendParcelas=(parcAll||[]).filter(p=>p.status==='Pendente').reduce((s,p)=>s+Number(p.valor),0);
+  const atrasadas=(parcAll||[]).filter(p=>p.status==='Pendente'&&diasAte(p.data_vencimento)<0).length;
   document.getElementById('d-pendente').textContent=fmt(pendParcelas);
-  document.getElementById('d-pendente-sub').textContent=atrasadas>0?`${atrasadas} parcela(s) atrasada(s)`:'';
+  document.getElementById('d-pendente-sub').textContent=atrasadas>0?`${atrasadas} atrasada(s)`:'';
   document.getElementById('d-pendente-sub').className='metric-sub'+(atrasadas>0?' down':'');
+  document.getElementById('d-clientes').textContent=(cl||[]).filter(c=>c.status==='Ativo').length;
+  document.getElementById('d-cb').textContent=(procs||[]).length;
   const urgentes=(procs||[]).filter(p=>{const d=diasAte(p.prazo);return d!==null&&d<=7&&d>=0;});
+  document.getElementById('d-cb-sub').textContent=urgentes.length>0?`${urgentes.length} com prazo próximo`:'';
+
+  // Propostas enviadas aguardando resposta
+  const enviadas=(orcs||[]).filter(o=>o.status==='Enviado');
+  document.getElementById('d-prop-env').textContent=enviadas.length;
+  document.getElementById('d-prop-sub').textContent=enviadas.length>0?`${fmt(enviadas.reduce((s,o)=>s+Number(o.valor_total||0),0))} em negociação`:'';
+
+  // ── ALERTAS ────────────────────────────────────────────────
   const alertas=document.getElementById('alertas-dash');
   alertas.innerHTML='';
-  urgentes.forEach(p=>alertas.innerHTML+=`<div class="alert alert-amber">⚠ Processo ${p.tipo} — ${p.cliente_nome}: prazo em ${diasAte(p.prazo)} dia(s)</div>`);
-  if(atrasadas>0) alertas.innerHTML+=`<div class="alert alert-red">⚠ ${atrasadas} parcela(s) com vencimento atrasado — verifique o financeiro</div>`;
-  document.getElementById('d-cb-sub').textContent=urgentes.length>0?`${urgentes.length} com prazo próximo`:'';
-  const {data:ativ}=await SB.from('atividades').select('*').order('criado_em',{ascending:false}).limit(10);
-  const el=document.getElementById('dash-atividades');
-  if(!ativ||!ativ.length){el.innerHTML='<div class="empty">Nenhuma atividade ainda.</div>';return;}
-  el.innerHTML=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Usuário</th><th>Status</th></tr>
-  ${ativ.map(a=>`<tr><td>${fmtData(a.criado_em)}</td><td><span class="badge b-gray" style="font-size:10px">${a.tipo}</span></td><td>${a.descricao}</td><td style="font-size:12px;color:var(--text2)">${a.usuario_nome||'—'}</td><td>${badge(a.status)}</td></tr>`).join('')}</table>`;
+  if(atrasadas>0) alertas.innerHTML+=`<div class="alert alert-red">⚠ ${atrasadas} parcela(s) com vencimento atrasado — <a onclick="showPage('financeiro',document.querySelector('[onclick*=financeiro]'))" style="cursor:pointer;text-decoration:underline">ver financeiro</a></div>`;
+  urgentes.forEach(p=>alertas.innerHTML+=`<div class="alert alert-amber">⚠ Processo CB — ${p.cliente_nome}: prazo em ${diasAte(p.prazo)} dia(s)</div>`);
+
+  // ── PARCELAS VENCENDO EM 7 DIAS ───────────────────────────
+  const proximas=(parcAll||[]).filter(p=>{
+    if(p.status!=='Pendente') return false;
+    const d=diasAte(p.data_vencimento);
+    return d!==null && d>=0 && d<=7;
+  }).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1);
+
+  const parcVencEl=document.getElementById('d-parcelas-venc');
+  if(!proximas.length){
+    parcVencEl.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0">Nenhuma parcela vencendo nos próximos 7 dias.</div>';
+  } else {
+    parcVencEl.innerHTML=proximas.map(p=>{
+      const d=diasAte(p.data_vencimento);
+      const cor=d===0?'var(--red)':d<=3?'var(--amber)':'var(--text2)';
+      return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente_nome||'—'}</div>
+          <div style="font-size:11px;color:var(--text3)">${p.venda_servico||''} · Parcela ${p.numero}/${p.total_parcelas}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:13px;font-weight:600;font-family:'DM Mono',monospace">${fmt(p.valor)}</div>
+          <div style="font-size:11px;color:${cor}">${d===0?'Vence hoje':d===1?'Amanhã':'em '+d+'d — '+fmtData(p.data_vencimento)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PIPELINE DE PROPOSTAS ──────────────────────────────────
+  const pipelineEl=document.getElementById('d-pipeline');
+  const statusOrdem=['Rascunho','Enviado','Aprovado','Reprovado'];
+  const corPipe={Rascunho:'var(--text3)',Enviado:'var(--blue)',Aprovado:'var(--green)',Reprovado:'var(--red)'};
+  const bgPipe={Rascunho:'var(--surface2)',Enviado:'var(--blue-bg)',Aprovado:'var(--green-bg)',Reprovado:'#fdecea'};
+  const conts={};
+  const vals={};
+  statusOrdem.forEach(s=>{conts[s]=0;vals[s]=0;});
+  (orcs||[]).forEach(o=>{
+    if(conts[o.status]!==undefined){conts[o.status]++;vals[o.status]+=Number(o.valor_total||0);}
+  });
+  pipelineEl.innerHTML=`<div style="display:flex;flex-direction:column;gap:8px">
+    ${statusOrdem.map(s=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:${bgPipe[s]};border-radius:var(--r);cursor:pointer"
+           onclick="showPage('orcamentos',document.querySelector('[onclick*=orcamentos]'))">
+        <div style="width:8px;height:8px;border-radius:50%;background:${corPipe[s]};flex-shrink:0"></div>
+        <div style="flex:1;font-size:13px;font-weight:500">${s}</div>
+        <div style="font-size:12px;color:var(--text2)">${conts[s]} proposta${conts[s]!==1?'s':''}</div>
+        <div style="font-size:12px;font-family:'DM Mono',monospace;font-weight:600;color:${corPipe[s]}">${fmt(vals[s])}</div>
+      </div>`).join('')}
+  </div>`;
+
+  // ── OBRAS EM ANDAMENTO ─────────────────────────────────────
+  const obrasEl=document.getElementById('d-obras');
+  const aprovadas=(orcs||[]).filter(o=>o.status==='Aprovado');
+  if(!aprovadas.length){
+    obrasEl.innerHTML='<div class="empty">Nenhuma obra em andamento. Confirme o contrato de uma proposta para iniciar.</div>';
+  } else {
+    const hoje_ms=new Date(hoje()+'T00:00:00').getTime();
+    obrasEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+      ${aprovadas.map(o=>{
+        const itens=(itensAll||[]).filter(i=>i.orcamento_id===o.id);
+        const total=itens.length;
+        const prog=total>0?Math.round(itens.reduce((s,i)=>s+Number(i.progresso||0),0)/total):0;
+        const fins=itens.filter(i=>i.data_fim_prevista).map(i=>new Date(i.data_fim_prevista+'T00:00:00').getTime());
+        const prazo=fins.length?Math.ceil((Math.max(...fins)-hoje_ms)/86400000):null;
+        const corProg=prog===100?'var(--green)':prog>60?'var(--blue)':'var(--amber)';
+        const corPrazo=prazo===null?'var(--text3)':prazo<0?'var(--red)':prazo<=7?'var(--amber)':'var(--text2)';
+        const prazoTxt=prazo===null?'Sem datas':prazo<0?`${Math.abs(prazo)}d atrasada`:prazo===0?'Vence hoje':`${prazo}d restantes`;
+        return`<div style="background:var(--surface);border:0.5px solid var(--border);border-left:3px solid ${corProg};border-radius:var(--r2);padding:13px;cursor:pointer;box-shadow:var(--shadow)"
+               onclick="showPage('gantt',document.querySelector('[onclick*=gantt]'));setTimeout(()=>abrirDetalheObra('${o.id}'),300)">
+          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">Nº ${String(o.numero).padStart(5,'0')}</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.cliente_nome}</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.titulo}</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+            <span style="color:var(--text3)">${total} item${total!==1?'s':''}</span>
+            <span style="font-weight:600;color:${corProg}">${prog}%</span>
+          </div>
+          <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-bottom:8px">
+            <div style="height:100%;width:${prog}%;background:${corProg};border-radius:3px"></div>
+          </div>
+          <div style="font-size:11px;color:${corPrazo}">${prazoTxt}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
 }
 
 // ── CLIENTES ────────────────────────────────────────────────
