@@ -497,6 +497,15 @@ tr:hover td{background:var(--surface2)}
             <div id="gantt-tabela" style="overflow-x:auto"></div>
           </div>
 
+          <!-- Painel financeiro da obra -->
+          <div class="card" style="margin-bottom:18px">
+            <div class="card-header">
+              <div class="card-title">Financeiro da obra</div>
+              <button class="btn btn-sm btn-primary" onclick="novoLancamentoObra()">+ Lançar despesa</button>
+            </div>
+            <div id="gantt-financeiro"><div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">Carregando...</div></div>
+          </div>
+
           <!-- Comentários -->
           <div class="card">
             <div class="card-header"><div class="card-title">Comentários da obra</div></div>
@@ -671,6 +680,19 @@ tr:hover td{background:var(--surface2)}
       <div class="fg">
         <label>Cliente / Obra / Fornecedor</label>
         <input id="l-origem" placeholder="Ex: Condomínio Alfredo Volpi, Escritório...">
+      </div>
+    </div>
+    <!-- Vínculo com obra do cronograma (apenas despesas) -->
+    <div id="l-bloco-obra" style="display:none">
+      <div style="height:0.5px;background:var(--border);margin:4px 0 12px"></div>
+      <div class="fg">
+        <label style="display:flex;align-items:center;gap:6px">
+          <span>Vincular a uma obra do cronograma</span>
+          <span style="font-size:11px;color:var(--text3)">(opcional — para controle de custo por obra)</span>
+        </label>
+        <select id="l-obra">
+          <option value="">— Nenhuma —</option>
+        </select>
       </div>
     </div>
     <div class="modal-footer">
@@ -1720,11 +1742,27 @@ async function renderLancFiltro(tipo){
   el.innerHTML=resumoHtml+tabela;
 }
 
-function lancTipoChange(){
+async function lancTipoChange(){
   const tipo=document.getElementById('l-tipo').value;
   document.getElementById('l-cat-despesas').style.display=tipo==='Despesa'?'':'none';
   document.getElementById('l-cat-receitas').style.display=tipo==='Receita'?'':'none';
   document.getElementById('l-categoria').value='';
+  // Mostra/oculta vínculo com obra
+  const blocoObra=document.getElementById('l-bloco-obra');
+  blocoObra.style.display=tipo==='Despesa'?'block':'none';
+  if(tipo==='Despesa'){
+    const selObra=document.getElementById('l-obra');
+    const cur=selObra.value;
+    selObra.innerHTML='<option value="">— Nenhuma —</option>';
+    const{data:obras}=await SB.from('orcamentos')
+      .select('id,numero,titulo,cliente_nome')
+      .eq('status','Aprovado')
+      .order('numero',{ascending:false});
+    (obras||[]).forEach(o=>{
+      selObra.innerHTML+=`<option value="${o.id}">Nº ${String(o.numero).padStart(5,'0')} — ${o.cliente_nome} — ${o.titulo}</option>`;
+    });
+    if(cur) selObra.value=cur;
+  }
 }
 
 async function salvarLancamento(){
@@ -1736,6 +1774,7 @@ async function salvarLancamento(){
   const status  = document.getElementById('l-status').value;
   const categ   = document.getElementById('l-categoria').value;
   const origem  = document.getElementById('l-origem').value;
+  const obraId  = document.getElementById('l-obra')?.value||null;
   const{error}=await SB.from('lancamentos').insert({
     tipo, descricao:desc,
     valor:Number(valor),
@@ -1743,13 +1782,17 @@ async function salvarLancamento(){
     origem,
     categoria:categ||null,
     status,
+    orcamento_id: obraId||null,
   });
   if(error){alert('Erro: '+error.message);return;}
   closeModal('modal-lancamento');
   ['l-desc','l-valor','l-origem'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('l-categoria').value='';
+  if(document.getElementById('l-obra')) document.getElementById('l-obra').value='';
   log('Financeiro',`${tipo}${categ?' ('+categ+')':''}: ${desc} — ${fmt(valor)}`,status);
   renderFinanceiro();renderDashboard();
+  // Se o gantt detalhe está aberto e a despesa foi vinculada à obra atual, atualiza
+  if(obraId && obraId===_ganttOrcId) renderGanttFinanceiro();
 }
 
 // ── FUNCIONÁRIOS ─────────────────────────────────────────────
@@ -2661,6 +2704,7 @@ async function carregarGantt(id){
   renderGanttChart();
   renderGanttTabela();
   renderComentarios(comentarios||[]);
+  renderGanttFinanceiro();
 }
 
 function renderGanttMetricas(){
@@ -2946,6 +2990,121 @@ async function enviarComentario(){
   const{data}=await SB.from('gantt_comentarios').select('*').eq('orcamento_id',_ganttOrcId).order('criado_em');
   renderComentarios(data||[]);
   carregarNotificacoes();
+}
+// ── FINANCEIRO DA OBRA ────────────────────────────────────────
+async function novoLancamentoObra(){
+  // Abre modal de lançamento pré-configurado como Despesa vinculada à obra
+  document.getElementById('l-tipo').value='Despesa';
+  document.getElementById('l-status').value='Confirmado';
+  document.getElementById('l-data').value=hoje();
+  document.getElementById('l-desc').value='';
+  document.getElementById('l-valor').value='';
+  document.getElementById('l-origem').value=_ganttOrc?.cliente_nome||'';
+  await lancTipoChange(); // popula select de obras e mostra bloco
+  // Pré-seleciona a obra atual
+  if(_ganttOrcId) document.getElementById('l-obra').value=_ganttOrcId;
+  document.getElementById('modal-lancamento').classList.add('open');
+}
+
+async function renderGanttFinanceiro(){
+  const el=document.getElementById('gantt-financeiro');
+  if(!el||!_ganttOrcId||!_ganttOrc)return;
+
+  const{data:despesas}=await SB.from('lancamentos')
+    .select('*')
+    .eq('orcamento_id',_ganttOrcId)
+    .eq('tipo','Despesa')
+    .order('data_lancamento',{ascending:false});
+
+  const lista=despesas||[];
+  const valorContrato=Number(_ganttOrc.valor_total||0);
+  const totalGasto=lista.filter(l=>l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const margem=valorContrato-totalGasto;
+  const pctGasto=valorContrato>0?Math.min(100,(totalGasto/valorContrato*100)):0;
+
+  // Totais por categoria
+  const CATS=['Material','Mão de obra','ART','Impostos','Operacional','Aluguel','Contabilidade','Investimentos','Terceiros','Retirada','Outros'];
+  const totCat={};
+  lista.filter(l=>l.status==='Confirmado').forEach(l=>{
+    const c=l.categoria||'Outros';
+    totCat[c]=(totCat[c]||0)+Number(l.valor);
+  });
+  const catsUsadas=CATS.filter(c=>totCat[c]>0);
+
+  // Cor da margem
+  const corMargem=margem>=0?'var(--green)':'var(--red)';
+  const corBarra=pctGasto>90?'var(--red)':pctGasto>70?'var(--amber)':'var(--blue)';
+
+  el.innerHTML=`
+    <!-- Métricas principais -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px">
+      <div style="background:var(--surface2);border-radius:var(--r);padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Valor do contrato</div>
+        <div style="font-size:18px;font-weight:700;color:var(--blue);font-family:'DM Mono',monospace">${fmt(valorContrato)}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--r);padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total gasto</div>
+        <div style="font-size:18px;font-weight:700;color:var(--red);font-family:'DM Mono',monospace">${fmt(totalGasto)}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--r);padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Margem</div>
+        <div style="font-size:18px;font-weight:700;color:${corMargem};font-family:'DM Mono',monospace">${margem>=0?'+':''}${fmt(margem)}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--r);padding:14px;text-align:center">
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">% gasto</div>
+        <div style="font-size:18px;font-weight:700;color:${corBarra};font-family:'DM Mono',monospace">${pctGasto.toFixed(1)}%</div>
+      </div>
+    </div>
+
+    <!-- Barra de custo -->
+    <div style="margin-bottom:${catsUsadas.length?'16px':'0'}">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
+        <span>Custo em relação ao contrato</span>
+        <span>${pctGasto.toFixed(1)}%</span>
+      </div>
+      <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${pctGasto}%;background:${corBarra};border-radius:4px;transition:width .4s"></div>
+      </div>
+    </div>
+
+    <!-- Por categoria -->
+    ${catsUsadas.length?`
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Despesas por categoria</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${catsUsadas.map(c=>`
+          <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
+            <span style="color:var(--text2)">${c}</span>
+            <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totCat[c])}</strong>
+          </div>`).join('')}
+      </div>
+    </div>`:''}
+
+    <!-- Lista de despesas -->
+    ${lista.length?`
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Lançamentos</div>
+      <table>
+        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
+        ${lista.map(l=>`<tr>
+          <td style="font-size:12px">${fmtData(l.data_lancamento)}</td>
+          <td style="font-size:12px">${l.descricao}</td>
+          <td>${l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—'}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--red)">${fmt(l.valor)}</td>
+          <td>${badge(l.status)}</td>
+          ${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluirLancObra('${l.id}')">Excluir</button></td>`:''}
+        </tr>`).join('')}
+      </table>
+    </div>`:`<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Nenhuma despesa lançada para esta obra ainda.<br>Clique em "+ Lançar despesa" para começar.</div>`}
+  `;
+}
+
+async function excluirLancObra(id){
+  if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
+  if(!confirm('Excluir este lançamento?'))return;
+  await SB.from('lancamentos').delete().eq('id',id);
+  renderGanttFinanceiro();
+  renderFinanceiro();
 }
 // ── FIM GANTT ─────────────────────────────────────────────────
 
