@@ -624,7 +624,7 @@ tr:hover td{background:var(--surface2)}
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title" id="lanc-modal-titulo">Novo lançamento</div>
-      <button class="close-btn" onclick="closeModal('modal-lancamento')">×</button>
+      <button class="close-btn" onclick="_lancEditandoId=null;document.getElementById('lanc-modal-titulo').textContent='Novo lançamento';closeModal('modal-lancamento')">×</button>
     </div>
     <div class="frow">
       <div class="fg">
@@ -696,7 +696,7 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="closeModal('modal-lancamento')">Cancelar</button>
+      <button class="btn" onclick="_lancEditandoId=null;document.getElementById('lanc-modal-titulo').textContent='Novo lançamento';closeModal('modal-lancamento')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarLancamento()">Salvar lançamento</button>
     </div>
   </div>
@@ -723,6 +723,51 @@ tr:hover td{background:var(--surface2)}
     <div class="frow-1 fg" style="margin-bottom:14px"><label>Etapa atual</label><select id="b-etapa"><option>Levantamento e projeto</option><option>Protocolo no CB</option><option>Pagamento de taxas</option><option>Análise técnica</option><option>Aguardando vistoria</option><option>Vistoria realizada</option><option>Aprovação final</option><option>AVCB emitido</option></select></div>
     <div class="frow-1 fg"><label>Observações</label><textarea id="b-obs" placeholder="Detalhes..."></textarea></div>
     <div class="modal-footer"><button class="btn" onclick="closeModal('modal-processo')">Cancelar</button><button class="btn btn-primary" onclick="salvarProcesso()">Salvar processo</button></div>
+  </div>
+</div>
+
+<!-- REGISTRAR RECEBIMENTO DE PARCELA -->
+<div class="overlay" id="modal-recebimento">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="rec-modal-titulo">Registrar recebimento</div>
+      <button class="close-btn" onclick="closeModal('modal-recebimento')">×</button>
+    </div>
+    <!-- Resumo da parcela -->
+    <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:16px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)">
+        <span style="color:var(--text2)">Cliente</span><strong id="rec-cliente">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)">
+        <span style="color:var(--text2)">Serviço</span><span id="rec-servico" style="text-align:right;max-width:65%">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid var(--border)">
+        <span style="color:var(--text2)">Parcela</span><span id="rec-parcela">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0">
+        <span style="color:var(--text2)">Valor original</span>
+        <strong id="rec-valor-original" style="font-family:'DM Mono',monospace;color:var(--blue)">—</strong>
+      </div>
+    </div>
+    <!-- Campos editáveis -->
+    <div class="frow">
+      <div class="fg">
+        <label>Valor recebido (R$) *</label>
+        <input id="rec-valor" type="number" min="0" step="0.01" placeholder="0,00">
+      </div>
+      <div class="fg">
+        <label>Data de recebimento *</label>
+        <input id="rec-data" type="date">
+      </div>
+    </div>
+    <!-- Aviso ISS quando valor for menor -->
+    <div id="rec-aviso-iss" style="display:none;padding:10px 12px;background:var(--amber-bg);border:0.5px solid #f5d79e;border-radius:var(--r);font-size:12px;color:var(--amber);margin-bottom:14px">
+      ⚠ Valor menor que o original — diferença de <strong id="rec-diff">—</strong> (possivelmente ISS retido na fonte).
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-recebimento')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarRecebimento()">Confirmar recebimento</button>
+    </div>
   </div>
 </div>
 
@@ -1429,7 +1474,8 @@ async function carregarParcelas(vendaId){
   const el=document.getElementById('parcelas-existentes');
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:12px 0">Nenhuma parcela gerada ainda. Use o formulário acima para configurar o pagamento.</div>';return;}
   const total=data.reduce((s,p)=>s+Number(p.valor),0);
-  const recebido=data.filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
+  // Recebido = soma dos valor_recebido (se preenchido) ou valor original
+  const recebido=data.filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor_recebido!=null?p.valor_recebido:p.valor),0);
   el.innerHTML=`<div style="margin-bottom:12px">
     <div class="info-row"><span class="info-label">Total do contrato</span><span class="info-value">${fmt(total)}</span></div>
     <div class="info-row"><span class="info-label">Recebido</span><span class="info-value" style="color:var(--green)">${fmt(recebido)}</span></div>
@@ -1438,25 +1484,24 @@ async function carregarParcelas(vendaId){
   ${data.map(p=>{
     const d=diasAte(p.data_vencimento);
     const atrasado=p.status==='Pendente'&&d!==null&&d<0;
-    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border)">
+    const temIss=p.status==='Recebido'&&p.valor_recebido!=null&&Number(p.valor_recebido)<Number(p.valor);
+    const valorExib=temIss?`<span style="font-family:'DM Mono',monospace;font-size:13px">${fmt(p.valor_recebido)}</span>
+      <span style="font-size:10px;color:var(--amber);margin-left:4px">ISS: ${fmt(Number(p.valor)-Number(p.valor_recebido))}</span>`:
+      `<span style="font-size:13px;font-family:'DM Mono',monospace">${fmt(p.valor)}</span>`;
+    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);flex-wrap:wrap">
       <span style="font-size:12px;color:var(--text3);font-weight:600;min-width:30px;text-align:center">${p.numero}/${p.total_parcelas}</span>
-      <span style="flex:1;font-size:13px;font-family:'DM Mono',monospace">${fmt(p.valor)}</span>
+      <span style="flex:1;min-width:120px">${valorExib}</span>
       <span style="font-size:12px;color:var(--text2)">${fmtData(p.data_vencimento)}${atrasado?` <span style="color:var(--red)">(atrasado)</span>`:''}</span>
       <span>${badge(atrasado?'Atrasado':p.status)}</span>
-      ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="marcarRecebido('${p.id}')">Recebido ✓</button>`:''}
+      ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="abrirRecebimento('${p.id}')">Recebido ✓</button>`:''}
+      ${p.status==='Recebido'&&podeEditar()?`<button class="btn btn-sm" onclick="abrirRecebimento('${p.id}')">Editar</button>`:''}
     </div>`;
   }).join('')}`;
 }
 
 async function marcarRecebido(parcelaId){
-  if(!podeEditar()){alert('Sem permissão.');return;}
-  const{error}=await SB.from('parcelas').update({status:'Recebido',data_recebimento:hoje()}).eq('id',parcelaId);
-  if(error){alert('Erro ao atualizar: '+error.message);return;}
-  await log('Financeiro','Parcela marcada como recebida','Recebido');
-  // Atualiza o modal de parcelas imediatamente
-  if(VENDA_ATIVA)await carregarParcelas(VENDA_ATIVA);
-  // Atualiza painéis em paralelo
-  await Promise.all([renderFinanceiro(),renderDashboard(),renderVendas()]);
+  // Redireciona para o modal de recebimento
+  abrirRecebimento(parcelaId);
 }
 
 // ── FINANCEIRO ───────────────────────────────────────────────
@@ -1597,10 +1642,13 @@ async function renderFinanceiro(){
       <td style="font-size:12px;color:var(--text2)">${l.origem||'—'}</td>
       <td style="font-weight:500;color:${l.tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${l.tipo==='Receita'?'+':'-'}${fmt(l.valor)}</td>
       <td>${badge(l.status)}</td>
-      ${podeExcluir()&&!l._parcela?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:(podeExcluir()?'<td></td>':'')}
+      <td><div class="btn-group">
+        ${!l._parcela&&podeEditar()?`<button class="btn btn-sm" onclick="editarLancamento('${l.id}')">Editar</button>`:''}
+        ${!l._parcela&&podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button>`:''}
+      </div></td>
     </tr>`;
   };
-  const thead=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição / Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>`;
+  const thead=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição / Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th><th></th></tr>`;
   document.getElementById('tabela-lanc').innerHTML=todos.length?thead+todos.map(tplRow).join('')+'</table>':'<div class="empty">Nenhum lançamento no período selecionado.</div>';
 
   renderParcelasFinanceiro(parcAll);
@@ -1616,31 +1664,100 @@ async function renderParcelasFinanceiro(parcelas){
     ...parcelas.filter(p=>p.status==='Pendente'&&(diasAte(p.data_vencimento)>=0||!p.data_vencimento)).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1),
     ...parcelas.filter(p=>p.status==='Recebido').sort((a,b)=>b.data_recebimento>a.data_recebimento?1:-1),
   ];
-  el.innerHTML=`<table><tr><th>Cliente</th><th>Serviço</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr>
+  el.innerHTML=`<table><tr><th>Cliente</th><th>Serviço</th><th>Parcela</th><th>Vencimento</th><th>Valor original</th><th>Recebido</th><th>Status</th><th>Ações</th></tr>
   ${sorted.map(p=>{
     const d=diasAte(p.data_vencimento);
     const atrasado=p.status==='Pendente'&&d!==null&&d<0;
     const prazoStr=p.data_vencimento?`${fmtData(p.data_vencimento)} <span style="font-size:11px;color:${atrasado?'var(--red)':d<=5?'var(--amber)':'var(--text3)'}">${atrasado?'(atrasado)':d===0?'(hoje)':d<=5?`(${d}d)`:''}</span>`:'—';
+    // Valor recebido — pode ser diferente se houve ISS retido
+    const temIss=p.status==='Recebido'&&p.valor_recebido!=null&&Number(p.valor_recebido)<Number(p.valor);
+    const valorRecebidoCell=p.status==='Recebido'
+      ?`<span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--green)">${fmt(p.valor_recebido!=null?p.valor_recebido:p.valor)}</span>
+        ${temIss?`<br><span style="font-size:10px;color:var(--amber)">ISS ret. ${fmt(Number(p.valor)-Number(p.valor_recebido))}</span>`:''}`
+      :'<span style="color:var(--text3);font-size:12px">—</span>';
     return`<tr>
       <td><strong>${p.cliente_nome||'—'}</strong></td>
       <td style="font-size:12px;color:var(--text2)">${p.venda_servico||'—'}</td>
       <td><span class="badge b-gray">${p.numero}/${p.total_parcelas}</span></td>
       <td>${prazoStr}</td>
       <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500">${fmt(p.valor)}</td>
+      <td>${valorRecebidoCell}</td>
       <td>${badge(atrasado?'Atrasado':p.status)}</td>
       <td><div class="btn-group">
-        ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="marcarRecebidoFin('${p.id}')">Recebido ✓</button>`:''}
-        ${p.status==='Recebido'?`<span style="font-size:11px;color:var(--text3)">Recebido em ${fmtData(p.data_recebimento)}</span>`:''}
+        ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="abrirRecebimento('${p.id}')">Recebido ✓</button>`:''}
+        ${p.status==='Recebido'&&podeEditar()?`<button class="btn btn-sm" onclick="abrirRecebimento('${p.id}')">Editar</button>`:''}
       </div></td>
     </tr>`;
   }).join('')}</table>`;
 }
 
+// Mantido para compatibilidade com botões antigos que ainda usam esta função
 async function marcarRecebidoFin(parcelaId){
+  abrirRecebimento(parcelaId);
+}
+
+let _parcelaRecId = null;
+
+async function abrirRecebimento(parcelaId){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{error}=await SB.from('parcelas').update({status:'Recebido',data_recebimento:hoje()}).eq('id',parcelaId);
-  if(error){alert('Erro ao atualizar: '+error.message);return;}
-  await log('Financeiro','Parcela marcada como recebida','Recebido');
+  const{data:p}=await SB.from('parcelas').select('*').eq('id',parcelaId).single();
+  if(!p) return;
+  _parcelaRecId = parcelaId;
+
+  // Preenche resumo
+  document.getElementById('rec-modal-titulo').textContent =
+    p.status==='Recebido' ? 'Editar recebimento' : 'Registrar recebimento';
+  document.getElementById('rec-cliente').textContent  = p.cliente_nome||'—';
+  document.getElementById('rec-servico').textContent  = p.venda_servico||'—';
+  document.getElementById('rec-parcela').textContent  =
+    `${p.numero}/${p.total_parcelas} — venc. ${fmtData(p.data_vencimento)}`;
+  document.getElementById('rec-valor-original').textContent = fmt(p.valor);
+
+  // Valores editáveis — preenche com o que já foi salvo ou com o padrão
+  document.getElementById('rec-valor').value =
+    p.valor_recebido != null ? p.valor_recebido : p.valor;
+  document.getElementById('rec-data').value  =
+    p.data_recebimento || hoje();
+
+  // Esconde aviso ISS inicialmente
+  document.getElementById('rec-aviso-iss').style.display='none';
+
+  // Listener para mostrar aviso se valor for menor
+  const inputValor = document.getElementById('rec-valor');
+  inputValor.oninput = () => {
+    const digitado = parseFloat(inputValor.value||0);
+    const original = Number(p.valor);
+    const diff     = original - digitado;
+    const aviso    = document.getElementById('rec-aviso-iss');
+    if(digitado > 0 && diff > 0.01){
+      document.getElementById('rec-diff').textContent = fmt(diff);
+      aviso.style.display = 'block';
+    } else {
+      aviso.style.display = 'none';
+    }
+  };
+
+  document.getElementById('modal-recebimento').classList.add('open');
+}
+
+async function confirmarRecebimento(){
+  if(!_parcelaRecId) return;
+  const valorRec = parseFloat(document.getElementById('rec-valor').value||0);
+  const dataRec  = document.getElementById('rec-data').value;
+  if(!valorRec || valorRec<=0){alert('Informe o valor recebido.');return;}
+  if(!dataRec){alert('Informe a data de recebimento.');return;}
+
+  const{error}=await SB.from('parcelas').update({
+    status:          'Recebido',
+    valor_recebido:  valorRec,
+    data_recebimento:dataRec,
+  }).eq('id',_parcelaRecId);
+
+  if(error){alert('Erro: '+error.message);return;}
+
+  log('Financeiro','Parcela marcada como recebida','Recebido');
+  closeModal('modal-recebimento');
+  _parcelaRecId=null;
   await Promise.all([renderFinanceiro(),renderDashboard(),renderVendas()]);
 }
 
@@ -1727,7 +1844,7 @@ async function renderLancFiltro(tipo){
   const tabela=`<table>
     <tr>
       <th>Data</th><th>Descrição</th><th>Categoria</th><th>Cliente / Obra</th>
-      <th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}
+      <th>Valor</th><th>Status</th><th></th>
     </tr>
     ${data.map(l=>`<tr>
       <td>${fmtData(l.data_lancamento)}</td>
@@ -1736,7 +1853,10 @@ async function renderLancFiltro(tipo){
       <td style="font-size:12px;color:var(--text2)">${l.origem||'—'}</td>
       <td style="font-weight:500;color:${tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${fmt(l.valor)}</td>
       <td>${badge(l._parcela?'Recebido':l.status)}</td>
-      ${podeExcluir()&&!l._parcela?`<td><button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button></td>`:(podeExcluir()?'<td></td>':'')}
+      <td><div class="btn-group">
+        ${!l._parcela&&podeEditar()?`<button class="btn btn-sm" onclick="editarLancamento('${l.id}')">Editar</button>`:''}
+        ${!l._parcela&&podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('lancamentos','${l.id}')">Excluir</button>`:''}
+      </div></td>
     </tr>`).join('')}
   </table>`;
   el.innerHTML=resumoHtml+tabela;
@@ -1765,6 +1885,26 @@ async function lancTipoChange(){
   }
 }
 
+let _lancEditandoId = null;
+
+async function editarLancamento(id){
+  const{data:l}=await SB.from('lancamentos').select('*').eq('id',id).single();
+  if(!l){alert('Lançamento não encontrado.');return;}
+  _lancEditandoId=id;
+  document.getElementById('lanc-modal-titulo').textContent='Editar lançamento';
+  document.getElementById('l-tipo').value=l.tipo||'Despesa';
+  document.getElementById('l-data').value=l.data_lancamento||hoje();
+  document.getElementById('l-status').value=l.status||'Confirmado';
+  document.getElementById('l-desc').value=l.descricao||'';
+  document.getElementById('l-valor').value=l.valor||'';
+  document.getElementById('l-origem').value=l.origem||'';
+  await lancTipoChange();
+  document.getElementById('l-categoria').value=l.categoria||'';
+  const selObra=document.getElementById('l-obra');
+  if(selObra&&l.orcamento_id) selObra.value=l.orcamento_id;
+  document.getElementById('modal-lancamento').classList.add('open');
+}
+
 async function salvarLancamento(){
   if(!podeEditar()){alert('Sem permissão.');return;}
   const desc=document.getElementById('l-desc').value.trim();
@@ -1775,24 +1915,28 @@ async function salvarLancamento(){
   const categ   = document.getElementById('l-categoria').value;
   const origem  = document.getElementById('l-origem').value;
   const obraId  = document.getElementById('l-obra')?.value||null;
-  const{error}=await SB.from('lancamentos').insert({
+  const payload = {
     tipo, descricao:desc,
     valor:Number(valor),
     data_lancamento:document.getElementById('l-data').value||hoje(),
-    origem,
-    categoria:categ||null,
-    status,
-    orcamento_id: obraId||null,
-  });
+    origem, categoria:categ||null, status, orcamento_id:obraId||null,
+  };
+  let error;
+  if(_lancEditandoId){
+    ({error}=await SB.from('lancamentos').update(payload).eq('id',_lancEditandoId));
+  } else {
+    ({error}=await SB.from('lancamentos').insert(payload));
+  }
   if(error){alert('Erro: '+error.message);return;}
+  _lancEditandoId=null;
+  document.getElementById('lanc-modal-titulo').textContent='Novo lançamento';
   closeModal('modal-lancamento');
   ['l-desc','l-valor','l-origem'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('l-categoria').value='';
   if(document.getElementById('l-obra')) document.getElementById('l-obra').value='';
   log('Financeiro',`${tipo}${categ?' ('+categ+')':''}: ${desc} — ${fmt(valor)}`,status);
   renderFinanceiro();renderDashboard();
-  // Se o gantt detalhe está aberto e a despesa foi vinculada à obra atual, atualiza
-  if(obraId && obraId===_ganttOrcId) renderGanttFinanceiro();
+  if(obraId&&obraId===_ganttOrcId) renderGanttFinanceiro();
 }
 
 // ── FUNCIONÁRIOS ─────────────────────────────────────────────
@@ -3085,14 +3229,17 @@ async function renderGanttFinanceiro(){
     <div>
       <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Lançamentos</div>
       <table>
-        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Status</th>${podeExcluir()?'<th></th>':''}</tr>
+        <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Status</th><th></th></tr>
         ${lista.map(l=>`<tr>
           <td style="font-size:12px">${fmtData(l.data_lancamento)}</td>
           <td style="font-size:12px">${l.descricao}</td>
           <td>${l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—'}</td>
           <td style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--red)">${fmt(l.valor)}</td>
           <td>${badge(l.status)}</td>
-          ${podeExcluir()?`<td><button class="btn btn-sm btn-danger" onclick="excluirLancObra('${l.id}')">Excluir</button></td>`:''}
+          <td><div class="btn-group">
+            ${podeEditar()?`<button class="btn btn-sm" onclick="editarLancamento('${l.id}')">Editar</button>`:''}
+            ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluirLancObra('${l.id}')">Excluir</button>`:''}
+          </div></td>
         </tr>`).join('')}
       </table>
     </div>`:`<div style="text-align:center;padding:20px;font-size:13px;color:var(--text3)">Nenhuma despesa lançada para esta obra ainda.<br>Clique em "+ Lançar despesa" para começar.</div>`}
