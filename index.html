@@ -249,7 +249,7 @@ tr:hover td{background:var(--surface2)}
       <div class="nav-item" onclick="showPage('funcionarios',this)"><span class="nav-icon">◑</span> Funcionários</div>
       <div class="nav-item" onclick="showPage('bombeiros',this)"><span class="nav-icon">◆</span> Corpo de Bombeiros</div>
       <div class="nav-item" onclick="showPage('orcamentos',this)"><span class="nav-icon">◇</span> Orçamentos</div>
-      <div class="nav-item" onclick="showPage('gantt',this)"><span class="nav-icon">▤</span> Cronograma</div>
+      <div class="nav-item" onclick="showPage('gantt',this)"><span class="nav-icon">▤</span> Serviços</div>
       <div class="nav-section" id="nav-admin-section" style="display:none">administração</div>
       <div class="nav-item" id="nav-usuarios" style="display:none" onclick="showPage('usuarios',this)"><span class="nav-icon">◧</span> Usuários</div>
     </div>
@@ -497,12 +497,12 @@ tr:hover td{background:var(--surface2)}
 
         <!-- ── VISÃO DASHBOARD (padrão) ── -->
         <div id="gantt-dashboard">
-          <div class="page-title">Cronograma de obras</div>
-          <div class="page-sub">Visão geral do andamento de todas as obras em execução</div>
+          <div class="page-title">Serviços</div>
+          <div class="page-sub">Acompanhamento de execução por proposta aprovada</div>
 
           <!-- Métricas gerais -->
           <div class="metrics" style="margin-bottom:22px">
-            <div class="metric"><div class="metric-label">Total de obras</div><div class="metric-value" id="gd-total">—</div></div>
+            <div class="metric"><div class="metric-label">Total</div><div class="metric-value" id="gd-total">—</div></div>
             <div class="metric"><div class="metric-label">Em dia</div><div class="metric-value" id="gd-emdia" style="color:var(--green)">—</div></div>
             <div class="metric"><div class="metric-label">Em atenção</div><div class="metric-value" id="gd-atencao" style="color:var(--amber)">—</div></div>
             <div class="metric"><div class="metric-label">Atrasadas</div><div class="metric-value" id="gd-atrasadas" style="color:var(--red)">—</div></div>
@@ -512,9 +512,15 @@ tr:hover td{background:var(--surface2)}
           <!-- Alertas -->
           <div id="gd-alertas"></div>
 
+          <!-- Abas Em Andamento / A Iniciar -->
+          <div class="tabs" style="margin-bottom:16px">
+            <div class="tab active" id="gd-tab-andamento" onclick="ganttSetAba('andamento')">Em andamento</div>
+            <div class="tab" id="gd-tab-iniciar" onclick="ganttSetAba('iniciar')">A iniciar</div>
+          </div>
+
           <!-- Cards de obras -->
           <div id="gd-cards">
-            <div class="loading"><span class="spinner"></span>Carregando obras...</div>
+            <div class="loading"><span class="spinner"></span>Carregando serviços...</div>
           </div>
         </div>
 
@@ -524,7 +530,7 @@ tr:hover td{background:var(--surface2)}
           <!-- Breadcrumb -->
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
             <button class="btn btn-sm" onclick="voltarDashboardGantt()">← Voltar</button>
-            <span style="font-size:13px;color:var(--text2)">Cronograma de obras</span>
+            <span style="font-size:13px;color:var(--text2)">Serviços</span>
             <span style="font-size:13px;color:var(--text3)">/</span>
             <span style="font-size:13px;font-weight:500" id="gantt-titulo-obra">—</span>
           </div>
@@ -2844,7 +2850,12 @@ async function executarContratacao(){
     }
   }
   if(!rows.length){alert('Configure pelo menos uma parcela.');return;}
+  // Marca proposta como Aprovado
   await SB.from('orcamentos').update({status:'Aprovado'}).eq('id',o.id);
+  // Atualiza status do cliente para Ativo automaticamente
+  if(o.cliente_id){
+    await SB.from('clientes').update({status:'Ativo'}).eq('id',o.cliente_id);
+  }
   const{data:venda,error:eVenda}=await SB.from('vendas').insert({
     cliente_id:o.cliente_id,cliente_nome:o.cliente_nome,servico:o.titulo,
     valor:o.valor_total,etapa:'Fechado',responsavel_nome:respNome,
@@ -2939,7 +2950,7 @@ async function renderGanttDashboard(){
   // Busca itens de todas as obras de uma vez
   const obraIds=obras.map(o=>o.id);
   const{data:todosItens}=await SB.from('itens_orcamento')
-    .select('orcamento_id,status_execucao,progresso,data_fim_prevista')
+    .select('orcamento_id,status_execucao,progresso,data_inicio_prevista,data_fim_prevista')
     .in('orcamento_id',obraIds);
 
   const hoje_ms=new Date(hoje()+'T00:00:00').getTime();
@@ -2988,29 +2999,76 @@ async function renderGanttDashboard(){
     alertas.innerHTML+=`<div class="alert alert-amber">⚡ <strong>${o.cliente_nome}</strong> — ${o.titulo}: ${o.diasRestantes} dia(s) restantes</div>`;
   });
 
-  // Cards
+  // Renderiza a aba ativa
+  ganttRenderCards(obras_info);
+}
+
+let _ganttAbaAtiva = 'andamento';
+
+function ganttSetAba(aba){
+  _ganttAbaAtiva = aba;
+  document.getElementById('gd-tab-andamento').classList.toggle('active', aba==='andamento');
+  document.getElementById('gd-tab-iniciar').classList.toggle('active', aba==='iniciar');
+  if(_ganttTodasObras) ganttRenderCards(_ganttTodasObras);
+}
+
+function ganttRenderCards(obras_info){
+  const hoje_ms = new Date(hoje()+'T00:00:00').getTime();
+
+  // Classificação Em andamento vs A iniciar:
+  // "Em andamento" = data_inicio_prevista do primeiro item <= hoje OU sem data OU já tem progresso
+  // "A iniciar"    = data_inicio_prevista do MENOR item > hoje (início futuro)
+  const andamento=[], iniciar=[];
+  obras_info.forEach(o=>{
+    if(o.situacao==='concluida'){andamento.push(o);return;}
+    const datasInicio=(o.itens||[])
+      .filter(i=>i.data_inicio_prevista)
+      .map(i=>new Date(i.data_inicio_prevista+'T00:00:00').getTime());
+    const temProgresso=(o.itens||[]).some(i=>Number(i.progresso||0)>0);
+    const menorInicio=datasInicio.length?Math.min(...datasInicio):null;
+
+    if(temProgresso || menorInicio===null || menorInicio<=hoje_ms){
+      andamento.push(o);
+    } else {
+      iniciar.push(o);
+    }
+  });
+
+  const lista = _ganttAbaAtiva==='andamento' ? andamento : iniciar;
+
   const COR_SITUACAO={
-    emdia:  {bg:'var(--green-bg)',  border:'#a8d5a8',  label:'Em dia',    lc:'var(--green)'},
-    atencao:{bg:'var(--amber-bg)',  border:'#f5d79e',  label:'Atenção',   lc:'var(--amber)'},
-    atrasada:{bg:'var(--red-bg)',   border:'#f5c0bc',  label:'Atrasada',  lc:'var(--red)'},
-    concluida:{bg:'var(--surface2)',border:'var(--border)',label:'Concluída',lc:'var(--text3)'},
-    semdata:{bg:'var(--surface2)',  border:'var(--border)',label:'Sem datas',lc:'var(--text3)'},
+    emdia:   {bg:'var(--green-bg)', border:'#a8d5a8',       label:'Em dia',      lc:'var(--green)'},
+    atencao: {bg:'var(--amber-bg)', border:'#f5d79e',       label:'Atenção',     lc:'var(--amber)'},
+    atrasada:{bg:'var(--red-bg)',   border:'#f5c0bc',       label:'Atrasada',    lc:'var(--red)'},
+    concluida:{bg:'var(--surface2)',border:'var(--border)',  label:'Concluída',   lc:'var(--text3)'},
+    semdata: {bg:'var(--surface2)', border:'var(--border)',  label:'Sem datas',   lc:'var(--text3)'},
   };
+
+  // Atualiza contadores das abas
+  document.getElementById('gd-tab-andamento').textContent=`Em andamento (${andamento.length})`;
+  document.getElementById('gd-tab-iniciar').textContent=`A iniciar (${iniciar.length})`;
+
+  if(!lista.length){
+    const msg=_ganttAbaAtiva==='andamento'
+      ?'Nenhum serviço em andamento.'
+      :'Nenhum serviço a iniciar. Configure datas de início futuras nos itens do cronograma.';
+    document.getElementById('gd-cards').innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--text3);font-size:14px">${msg}</div>`;
+    return;
+  }
 
   // Ordena: atrasadas > atenção > em dia > sem data > concluídas
   const ordem={atrasada:0,atencao:1,emdia:2,semdata:3,concluida:4};
-  obras_info.sort((a,b)=>(ordem[a.situacao]||9)-(ordem[b.situacao]||9));
+  lista.sort((a,b)=>(ordem[a.situacao]||9)-(ordem[b.situacao]||9));
 
   document.getElementById('gd-cards').innerHTML=`
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
-      ${obras_info.map(o=>{
+      ${lista.map(o=>{
         const cor=COR_SITUACAO[o.situacao]||COR_SITUACAO.semdata;
         const prazoStr=o.prazoFinal?
           (o.diasRestantes<0?`<span style="color:var(--red);font-weight:600">Atrasada ${Math.abs(o.diasRestantes)}d</span>`:
            o.diasRestantes===0?`<span style="color:var(--red);font-weight:600">Vence hoje!</span>`:
            `<span style="color:${o.diasRestantes<=7?'var(--amber)':'var(--text2)'}">Prazo: ${fmtData(o.prazoFinal.toISOString().split('T')[0])} (${o.diasRestantes}d)</span>`)
           :'<span style="color:var(--text3)">Datas não configuradas</span>';
-
         return`<div style="background:var(--surface);border:0.5px solid ${cor.border};border-left:4px solid ${cor.lc};border-radius:var(--r2);padding:16px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s"
           onclick="abrirDetalheObra('${o.id}')" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow='var(--shadow)'">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
@@ -3021,7 +3079,6 @@ async function renderGanttDashboard(){
             </div>
             <span style="font-size:10px;padding:3px 8px;border-radius:10px;background:${cor.bg};color:${cor.lc};border:0.5px solid ${cor.border};white-space:nowrap;flex-shrink:0;margin-left:8px">${cor.label}</span>
           </div>
-          <!-- Barra de progresso -->
           <div style="margin-bottom:6px">
             <div style="display:flex;justify-content:space-between;margin-bottom:4px">
               <span style="font-size:11px;color:var(--text2)">Progresso</span>
@@ -3036,7 +3093,7 @@ async function renderGanttDashboard(){
             <span style="font-size:12px">${prazoStr}</span>
           </div>
           <div style="margin-top:10px;text-align:right">
-            <span style="font-size:12px;color:var(--blue);font-weight:500">Abrir cronograma →</span>
+            <span style="font-size:12px;color:var(--blue);font-weight:500">Abrir serviço →</span>
           </div>
         </div>`;
       }).join('')}
