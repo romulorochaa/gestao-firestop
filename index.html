@@ -1607,7 +1607,7 @@ async function renderVendas(){
       <td>${fmtData(vd.data_proposta)}</td>
       <td>${parcelasInfo}</td>
       <td><div class="btn-group">
-        <button class="btn btn-sm" onclick="abrirDetalheVenda('${vd.id}')">Detalhes</button>
+        <button class="btn btn-sm" onclick="abrirDetalheVenda('${vd.id}')">Editar</button>
         ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('vendas','${vd.id}')">Excluir</button>`:''}
       </div></td>
     </tr>`;
@@ -1618,7 +1618,7 @@ async function abrirDetalheVenda(id){
   VENDA_ATIVA=id;
   const{data:v}=await SB.from('vendas').select('*').eq('id',id).single();
   await popularSelects();
-  document.getElementById('modal-venda-titulo').textContent='Detalhes da venda';
+  document.getElementById('modal-venda-titulo').textContent='Editar venda';
   document.getElementById('v-cliente').value=v.cliente_id||'';
   document.getElementById('v-servico').value=v.servico;
   document.getElementById('v-valor').value=v.valor;
@@ -1756,7 +1756,6 @@ async function carregarParcelas(vendaId){
   const el=document.getElementById('parcelas-existentes');
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:12px 0">Nenhuma parcela gerada ainda. Use o formulário acima para configurar o pagamento.</div>';return;}
   const total=data.reduce((s,p)=>s+Number(p.valor),0);
-  // Recebido = soma dos valor_recebido (se preenchido) ou valor original
   const recebido=data.filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor_recebido!=null?p.valor_recebido:p.valor),0);
   el.innerHTML=`<div style="margin-bottom:12px">
     <div class="info-row"><span class="info-label">Total do contrato</span><span class="info-value">${fmt(total)}</span></div>
@@ -1767,22 +1766,66 @@ async function carregarParcelas(vendaId){
     const d=diasAte(p.data_vencimento);
     const atrasado=p.status==='Pendente'&&d!==null&&d<0;
     const temIss=p.status==='Recebido'&&p.valor_recebido!=null&&Number(p.valor_recebido)<Number(p.valor);
-    const valorExib=temIss?`<span style="font-family:'DM Mono',monospace;font-size:13px">${fmt(p.valor_recebido)}</span>
-      <span style="font-size:10px;color:var(--amber);margin-left:4px">ISS: ${fmt(Number(p.valor)-Number(p.valor_recebido))}</span>`:
-      `<span style="font-size:13px;font-family:'DM Mono',monospace">${fmt(p.valor)}</span>`;
-    return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);flex-wrap:wrap">
+    const valorExib=temIss
+      ?`<span style="font-family:'DM Mono',monospace;font-size:13px">${fmt(p.valor_recebido)}</span><span style="font-size:10px;color:var(--amber);margin-left:4px">ISS: ${fmt(Number(p.valor)-Number(p.valor_recebido))}</span>`
+      :`<span style="font-size:13px;font-family:'DM Mono',monospace">${fmt(p.valor)}</span>`;
+    return`<div id="parc-row-${p.id}" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);flex-wrap:wrap">
       <span style="font-size:12px;color:var(--text3);font-weight:600;min-width:30px;text-align:center">${p.numero}/${p.total_parcelas}</span>
       <span style="flex:1;min-width:120px">${valorExib}</span>
       <span style="font-size:12px;color:var(--text2)">${fmtData(p.data_vencimento)}${atrasado?` <span style="color:var(--red)">(atrasado)</span>`:''}</span>
       <span>${badge(atrasado?'Atrasado':p.status)}</span>
-      ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="abrirRecebimento('${p.id}')">Recebido ✓</button>`:''}
-      ${p.status==='Recebido'&&podeEditar()?`<button class="btn btn-sm" onclick="abrirRecebimento('${p.id}')">Editar</button>`:''}
+      <div class="btn-group">
+        ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm" onclick="editarParcelaVenda('${p.id}','${p.valor}','${p.data_vencimento||''}')">Editar</button>`:''}
+        ${p.status!=='Recebido'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="abrirRecebimento('${p.id}')">Recebido ✓</button>`:''}
+        ${p.status==='Recebido'&&podeEditar()?`<button class="btn btn-sm" onclick="abrirRecebimento('${p.id}')">Editar receb.</button>`:''}
+        ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluirParcela('${p.id}')">Excluir</button>`:''}
+      </div>
     </div>`;
   }).join('')}`;
 }
 
+function editarParcelaVenda(id, valorAtual, dataAtual){
+  const row=document.getElementById(`parc-row-${id}`);
+  if(!row) return;
+  row.innerHTML=`
+    <span style="font-size:12px;color:var(--text3);font-weight:600;min-width:30px;text-align:center">✎</span>
+    <div class="fg" style="margin-bottom:0;flex:1;min-width:100px">
+      <input type="number" id="pe-valor-${id}" value="${valorAtual}" min="0" step="0.01"
+        style="padding:6px 8px;border:0.5px solid var(--blue);border-radius:6px;font-size:13px;font-family:'DM Mono',monospace;width:100%">
+    </div>
+    <div class="fg" style="margin-bottom:0;flex:1;min-width:120px">
+      <input type="date" id="pe-data-${id}" value="${dataAtual}"
+        style="padding:6px 8px;border:0.5px solid var(--blue);border-radius:6px;font-size:12px;font-family:inherit;width:100%">
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-sm btn-primary" onclick="salvarParcelaVenda('${id}')">✓ Salvar</button>
+      <button class="btn btn-sm" onclick="carregarParcelas('${VENDA_ATIVA}')">✕ Cancelar</button>
+    </div>`;
+}
+
+async function salvarParcelaVenda(id){
+  const valor=parseFloat(document.getElementById(`pe-valor-${id}`)?.value||0);
+  const data=document.getElementById(`pe-data-${id}`)?.value;
+  if(!valor||valor<=0){alert('Informe um valor válido.');return;}
+  if(!data){alert('Informe a data de vencimento.');return;}
+  const{error}=await SB.from('parcelas').update({
+    valor,
+    data_vencimento:data,
+  }).eq('id',id);
+  if(error){alert('Erro: '+error.message);return;}
+  log('Financeiro','Parcela editada','Pendente');
+  await Promise.all([carregarParcelas(VENDA_ATIVA),renderFinanceiro(),renderDashboard()]);
+}
+
+async function excluirParcela(id){
+  if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
+  if(!confirm('Excluir esta parcela?'))return;
+  await SB.from('parcelas').delete().eq('id',id);
+  carregarParcelas(VENDA_ATIVA);
+  renderFinanceiro();
+}
+
 async function marcarRecebido(parcelaId){
-  // Redireciona para o modal de recebimento
   abrirRecebimento(parcelaId);
 }
 
