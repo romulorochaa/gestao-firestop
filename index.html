@@ -418,9 +418,11 @@ tr:hover td{background:var(--surface2)}
           <div class="metric"><div class="metric-label">Receitas confirmadas</div><div class="metric-value" id="f-rec">—</div></div>
           <div class="metric"><div class="metric-label">Despesas confirmadas</div><div class="metric-value" id="f-des">—</div></div>
           <div class="metric"><div class="metric-label">Parcelas a receber</div><div class="metric-value" id="f-pend">—</div><div class="metric-sub down" id="f-pend-sub"></div></div>
+          <div class="metric"><div class="metric-label">A pagar (despesas)</div><div class="metric-value" id="f-apagar" style="color:var(--red)">—</div><div class="metric-sub" id="f-apagar-sub"></div></div>
         </div>
         <div class="tabs">
           <div class="tab active" onclick="setTab(this,'ft-parcelas')">Parcelas a receber</div>
+          <div class="tab" onclick="setTab(this,'ft-apagar')">A pagar</div>
           <div class="tab" onclick="setTab(this,'ft-todos')">Lançamentos</div>
           <div class="tab" onclick="setTab(this,'ft-receitas')">Receitas</div>
           <div class="tab" onclick="setTab(this,'ft-despesas')">Despesas</div>
@@ -429,6 +431,12 @@ tr:hover td{background:var(--surface2)}
           <div class="card">
             <div class="card-header"><div class="card-title">Parcelas a receber</div></div>
             <div id="tabela-parcelas-fin"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
+          </div>
+        </div>
+        <div id="ft-apagar" style="display:none">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Parcelas a pagar</div></div>
+            <div id="tabela-apagar"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
           </div>
         </div>
         <div id="ft-todos" style="display:none">
@@ -542,6 +550,20 @@ tr:hover td{background:var(--surface2)}
                 <div class="card-title" id="gantt-titulo-obra2">—</div>
                 <div style="font-size:13px;color:var(--text2);margin-top:4px" id="gantt-cliente-obra">—</div>
                 <div style="font-size:12px;color:var(--text3);margin-top:2px" id="gantt-prazo-obra"></div>
+                <!-- Datas da obra -->
+                <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap" id="gantt-datas-obra">
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)">Início</span>
+                    <input type="date" id="gantt-obra-inicio" onchange="salvarDatasObra()"
+                      style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit">
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text3)">Fim previsto</span>
+                    <input type="date" id="gantt-obra-fim" onchange="salvarDatasObra()"
+                      style="font-size:12px;padding:4px 8px;border:0.5px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit">
+                  </div>
+                  <div id="gantt-obra-duracao" style="font-size:11px;color:var(--text3);align-self:center"></div>
+                </div>
               </div>
               <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
                 <div style="text-align:center">
@@ -552,7 +574,7 @@ tr:hover td{background:var(--surface2)}
                   <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Itens concluídos</div>
                   <div style="font-size:26px;font-weight:700;color:var(--green)" id="gantt-itens-ok">0/0</div>
                 </div>
-                <button class="btn btn-sm" onclick="abrirConfigurarDatas()" id="btn-config-datas">Configurar datas</button>
+                <button class="btn btn-sm" onclick="abrirConfigurarDatas()" id="btn-config-datas">Configurar datas itens</button>
                 <button class="btn btn-sm" onclick="copiarLinkObraCliente()">Copiar link do cliente</button>
               </div>
             </div>
@@ -777,6 +799,27 @@ tr:hover td{background:var(--surface2)}
         <select id="l-obra">
           <option value="">— Nenhuma —</option>
         </select>
+      </div>
+    </div>
+    <!-- Parcelamento (apenas despesas) -->
+    <div id="l-bloco-parcelado" style="display:none">
+      <div style="height:0.5px;background:var(--border);margin:4px 0 12px"></div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px;font-size:13px">
+        <input type="checkbox" id="l-parcelado" onchange="lancParceladoChange()" style="accent-color:var(--blue);width:15px;height:15px">
+        <span>Compra parcelada — gerar parcelas a pagar automaticamente</span>
+      </label>
+      <div id="l-bloco-parcelas" style="display:none">
+        <div class="frow">
+          <div class="fg">
+            <label>Número de parcelas *</label>
+            <input id="l-parc-qtd" type="number" min="2" max="60" value="2" oninput="calcPreviewDespesa()">
+          </div>
+          <div class="fg">
+            <label>Primeiro vencimento *</label>
+            <input id="l-parc-venc" type="date" oninput="calcPreviewDespesa()">
+          </div>
+        </div>
+        <div id="l-parc-preview" style="display:none;padding:10px 12px;background:var(--amber-bg);border:0.5px solid #f5d79e;border-radius:var(--r);font-size:12px;color:var(--amber);margin-bottom:4px"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1175,11 +1218,12 @@ function showPage(id,el){
 function setTab(el,tabId){
   el.closest('.tabs').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
-  ['ft-parcelas','ft-todos','ft-receitas','ft-despesas'].forEach(id=>{const d=document.getElementById(id);if(d)d.style.display='none';});
+  ['ft-parcelas','ft-todos','ft-receitas','ft-despesas','ft-apagar'].forEach(id=>{const d=document.getElementById(id);if(d)d.style.display='none';});
   document.getElementById(tabId).style.display='block';
   if(tabId==='ft-receitas')renderLancFiltro('Receita');
   if(tabId==='ft-despesas')renderLancFiltro('Despesa');
   if(tabId==='ft-parcelas')renderParcelasFinanceiro();
+  if(tabId==='ft-apagar')renderParcelasAPagar();
 }
 
 function setModalTab(el,paneId){
@@ -2105,9 +2149,16 @@ async function lancTipoChange(){
   document.getElementById('l-cat-despesas').style.display=tipo==='Despesa'?'':'none';
   document.getElementById('l-cat-receitas').style.display=tipo==='Receita'?'':'none';
   document.getElementById('l-categoria').value='';
-  // Mostra/oculta vínculo com obra
+  // Bloco obra — apenas despesas
   const blocoObra=document.getElementById('l-bloco-obra');
   blocoObra.style.display=tipo==='Despesa'?'block':'none';
+  // Bloco parcelamento — apenas despesas
+  document.getElementById('l-bloco-parcelado').style.display=tipo==='Despesa'?'block':'none';
+  if(tipo!=='Despesa'){
+    const cb=document.getElementById('l-parcelado');
+    if(cb) cb.checked=false;
+    document.getElementById('l-bloco-parcelas').style.display='none';
+  }
   if(tipo==='Despesa'){
     const selObra=document.getElementById('l-obra');
     const cur=selObra.value;
@@ -2121,6 +2172,26 @@ async function lancTipoChange(){
     });
     if(cur) selObra.value=cur;
   }
+}
+
+function lancParceladoChange(){
+  const checked=document.getElementById('l-parcelado').checked;
+  document.getElementById('l-bloco-parcelas').style.display=checked?'block':'none';
+  if(checked){
+    document.getElementById('l-parc-venc').value=hoje();
+    calcPreviewDespesa();
+  }
+}
+
+function calcPreviewDespesa(){
+  const total=parseFloat(document.getElementById('l-valor')?.value||0);
+  const qtd=parseInt(document.getElementById('l-parc-qtd')?.value||1);
+  const venc=document.getElementById('l-parc-venc')?.value;
+  const el=document.getElementById('l-parc-preview');
+  if(!el) return;
+  if(!total||!venc||qtd<1){el.style.display='none';return;}
+  el.style.display='block';
+  el.innerHTML=`<strong>${qtd}x de ${fmt(total/qtd)}</strong> — primeiro vencimento: ${fmtData(venc)}`;
 }
 
 let _lancEditandoId = null;
@@ -2153,28 +2224,122 @@ async function salvarLancamento(){
   const categ   = document.getElementById('l-categoria').value;
   const origem  = document.getElementById('l-origem').value;
   const obraId  = document.getElementById('l-obra')?.value||null;
-  const payload = {
-    tipo, descricao:desc,
-    valor:Number(valor),
-    data_lancamento:document.getElementById('l-data').value||hoje(),
-    origem, categoria:categ||null, status, orcamento_id:obraId||null,
-  };
-  let error;
-  if(_lancEditandoId){
-    ({error}=await SB.from('lancamentos').update(payload).eq('id',_lancEditandoId));
+  const parcelado=document.getElementById('l-parcelado')?.checked&&tipo==='Despesa';
+
+  if(parcelado&&!_lancEditandoId){
+    const qtd=parseInt(document.getElementById('l-parc-qtd').value||2);
+    const venc=document.getElementById('l-parc-venc').value;
+    if(!venc){alert('Informe o primeiro vencimento das parcelas.');return;}
+    if(qtd<2){alert('Informe ao menos 2 parcelas.');return;}
+    const{data:lanc,error:eLanc}=await SB.from('lancamentos').insert({
+      tipo:'Despesa',descricao:desc,valor:Number(valor),
+      data_lancamento:document.getElementById('l-data').value||hoje(),
+      origem,categoria:categ||null,status:'Pendente',orcamento_id:obraId||null,
+    }).select().single();
+    if(eLanc){alert('Erro: '+eLanc.message);return;}
+    const porParcela=parseFloat((Number(valor)/qtd).toFixed(2));
+    const rows=[];
+    for(let i=0;i<qtd;i++){
+      const d=new Date(venc+'T12:00:00');d.setMonth(d.getMonth()+i);
+      rows.push({lancamento_id:lanc.id,descricao:desc,fornecedor:origem,categoria:categ||null,
+        orcamento_id:obraId||null,numero:i+1,total_parcelas:qtd,valor:porParcela,
+        data_vencimento:d.toISOString().split('T')[0],status:'Pendente'});
+    }
+    const{error:eParcelas}=await SB.from('parcelas_despesa').insert(rows);
+    if(eParcelas){alert('Lançamento criado, mas erro nas parcelas: '+eParcelas.message);}
+    log('Financeiro',`Despesa parcelada: ${desc} ${qtd}x — ${fmt(Number(valor)/qtd)}`,'Pendente');
   } else {
-    ({error}=await SB.from('lancamentos').insert(payload));
+    const payload={tipo,descricao:desc,valor:Number(valor),
+      data_lancamento:document.getElementById('l-data').value||hoje(),
+      origem,categoria:categ||null,status,orcamento_id:obraId||null};
+    let error;
+    if(_lancEditandoId){
+      ({error}=await SB.from('lancamentos').update(payload).eq('id',_lancEditandoId));
+    } else {
+      ({error}=await SB.from('lancamentos').insert(payload));
+    }
+    if(error){alert('Erro: '+error.message);return;}
+    log('Financeiro',`${tipo}${categ?' ('+categ+')':''}: ${desc} — ${fmt(valor)}`,status);
   }
-  if(error){alert('Erro: '+error.message);return;}
   _lancEditandoId=null;
   document.getElementById('lanc-modal-titulo').textContent='Novo lançamento';
   closeModal('modal-lancamento');
   ['l-desc','l-valor','l-origem'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('l-categoria').value='';
-  if(document.getElementById('l-obra')) document.getElementById('l-obra').value='';
-  log('Financeiro',`${tipo}${categ?' ('+categ+')':''}: ${desc} — ${fmt(valor)}`,status);
+  if(document.getElementById('l-obra'))document.getElementById('l-obra').value='';
+  if(document.getElementById('l-parcelado'))document.getElementById('l-parcelado').checked=false;
+  document.getElementById('l-bloco-parcelas').style.display='none';
   renderFinanceiro();renderDashboard();
   if(obraId&&obraId===_ganttOrcId) renderGanttFinanceiro();
+}
+
+// ── PARCELAS A PAGAR ─────────────────────────────────────────
+async function renderParcelasAPagar(){
+  const{data:parcelas}=await SB.from('parcelas_despesa').select('*').order('data_vencimento');
+  const el=document.getElementById('tabela-apagar');
+  const pendentes=(parcelas||[]).filter(p=>p.status==='Pendente');
+  const totalPend=pendentes.reduce((s,p)=>s+Number(p.valor),0);
+  const atrasadas=pendentes.filter(p=>diasAte(p.data_vencimento)<0).length;
+  const fApagar=document.getElementById('f-apagar');
+  if(fApagar)fApagar.textContent=fmt(totalPend);
+  const fApSub=document.getElementById('f-apagar-sub');
+  if(fApSub){fApSub.textContent=atrasadas>0?`${atrasadas} atrasada(s)`:'';fApSub.className='metric-sub'+(atrasadas>0?' down':'');}
+  if(!el)return;
+  if(!parcelas||!parcelas.length){el.innerHTML='<div class="empty">Nenhuma parcela de despesa. Lance uma despesa parcelada para começar.</div>';return;}
+  const sorted=[
+    ...parcelas.filter(p=>p.status==='Pendente'&&diasAte(p.data_vencimento)<0).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1),
+    ...parcelas.filter(p=>p.status==='Pendente'&&(diasAte(p.data_vencimento)>=0||!p.data_vencimento)).sort((a,b)=>a.data_vencimento>b.data_vencimento?1:-1),
+    ...parcelas.filter(p=>p.status==='Pago').sort((a,b)=>b.data_pagamento>a.data_pagamento?1:-1),
+  ];
+  el.innerHTML=`<table>
+    <tr><th>Descrição</th><th>Fornecedor</th><th>Categoria</th><th>Parcela</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Ações</th></tr>
+    ${sorted.map(p=>{
+      const d=diasAte(p.data_vencimento);
+      const atrasado=p.status==='Pendente'&&d!==null&&d<0;
+      const prazoStr=p.data_vencimento?`${fmtData(p.data_vencimento)} <span style="font-size:11px;color:${atrasado?'var(--red)':d<=5?'var(--amber)':'var(--text3)'}">${atrasado?'(atrasado)':d===0?'(hoje)':d<=5?`(${d}d)`:''}</span>`:'—';
+      return`<tr>
+        <td><strong style="font-size:13px">${p.descricao||'—'}</strong></td>
+        <td style="font-size:12px;color:var(--text2)">${p.fornecedor||'—'}</td>
+        <td>${p.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${p.categoria}</span>`:'—'}</td>
+        <td><span class="badge b-gray">${p.numero}/${p.total_parcelas}</span></td>
+        <td>${prazoStr}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--red)">${fmt(p.valor)}</td>
+        <td>${badge(atrasado?'Atrasado':p.status)}</td>
+        <td><div class="btn-group">
+          ${p.status==='Pendente'&&podeEditar()?`<button class="btn btn-sm btn-success" onclick="pagarParcelaDespesa('${p.id}')">Pago ✓</button>`:''}
+          ${p.status==='Pago'?`<span style="font-size:11px;color:var(--text3)">Pago em ${fmtData(p.data_pagamento)}</span>`:''}
+          ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluirParcelaDespesa('${p.id}')">Excluir</button>`:''}
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </table>`;
+}
+
+async function pagarParcelaDespesa(id){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  const{data:p}=await SB.from('parcelas_despesa').select('*').eq('id',id).single();
+  if(!p)return;
+  await SB.from('parcelas_despesa').update({status:'Pago',data_pagamento:hoje()}).eq('id',id);
+  await SB.from('lancamentos').insert({
+    tipo:'Despesa',
+    descricao:`${p.descricao} (${p.numero}/${p.total_parcelas})`,
+    valor:Number(p.valor),data_lancamento:hoje(),
+    origem:p.fornecedor,categoria:p.categoria,
+    status:'Confirmado',orcamento_id:p.orcamento_id,
+  });
+  const{data:todas}=await SB.from('parcelas_despesa').select('status').eq('lancamento_id',p.lancamento_id);
+  if(todas&&todas.every(t=>t.status==='Pago'))
+    await SB.from('lancamentos').update({status:'Confirmado'}).eq('id',p.lancamento_id);
+  log('Financeiro',`Parcela paga: ${p.descricao} ${p.numero}/${p.total_parcelas}`,'Pago');
+  await Promise.all([renderFinanceiro(),renderDashboard()]);
+  renderParcelasAPagar();
+}
+
+async function excluirParcelaDespesa(id){
+  if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
+  if(!confirm('Excluir esta parcela?'))return;
+  await SB.from('parcelas_despesa').delete().eq('id',id);
+  renderParcelasAPagar();renderFinanceiro();
 }
 
 // ── FUNCIONÁRIOS ─────────────────────────────────────────────
@@ -3130,14 +3295,58 @@ async function carregarGantt(id){
   document.getElementById('gantt-titulo-obra').textContent=orc?.titulo||'—';
   document.getElementById('gantt-titulo-obra2').textContent=orc?.titulo||'—';
   document.getElementById('gantt-cliente-obra').textContent=orc?.cliente_nome||'—';
-  // Prazo
+  // Prazo textual
   const prazoEl=document.getElementById('gantt-prazo-obra');
   if(orc?.prazo_execucao) prazoEl.textContent='Prazo: '+orc.prazo_execucao;
+  // Datas da obra
+  document.getElementById('gantt-obra-inicio').value=orc?.data_inicio_obra||'';
+  document.getElementById('gantt-obra-fim').value=orc?.data_fim_obra||'';
+  _atualizarDuracaoObra(orc?.data_inicio_obra, orc?.data_fim_obra);
   renderGanttMetricas();
   renderGanttChart();
   renderGanttTabela();
   renderComentarios(comentarios||[]);
   renderGanttFinanceiro();
+}
+
+function _atualizarDuracaoObra(ini, fim){
+  const el=document.getElementById('gantt-obra-duracao');
+  if(!el) return;
+  if(!ini&&!fim){el.textContent='';return;}
+  const hoje_ms=new Date(hoje()+'T00:00:00').getTime();
+  if(ini&&fim){
+    const duracao=Math.ceil((new Date(fim+'T00:00:00')-new Date(ini+'T00:00:00'))/86400000);
+    const diasRestantes=Math.ceil((new Date(fim+'T00:00:00')-hoje_ms)/86400000);
+    const cor=diasRestantes<0?'var(--red)':diasRestantes<=7?'var(--amber)':'var(--text3)';
+    el.style.color=cor;
+    el.textContent=`${duracao} dias de duração · ${diasRestantes<0?`${Math.abs(diasRestantes)}d atrasada`:diasRestantes===0?'termina hoje':`${diasRestantes}d restantes`}`;
+  } else if(ini){
+    el.textContent=`Iniciada em ${fmtData(ini)}`;
+  } else {
+    const d=diasAte(fim);
+    el.textContent=d!==null?(d<0?`${Math.abs(d)}d atrasada`:`${d}d para o fim`):'';
+  }
+}
+
+async function salvarDatasObra(){
+  if(!_ganttOrcId) return;
+  const ini=document.getElementById('gantt-obra-inicio').value||null;
+  const fim=document.getElementById('gantt-obra-fim').value||null;
+  // Validação básica
+  if(ini&&fim&&ini>fim){
+    alert('A data de início não pode ser posterior à data de fim.');
+    return;
+  }
+  await SB.from('orcamentos').update({
+    data_inicio_obra: ini,
+    data_fim_obra:    fim,
+  }).eq('id',_ganttOrcId);
+  if(_ganttOrc){
+    _ganttOrc.data_inicio_obra=ini;
+    _ganttOrc.data_fim_obra=fim;
+  }
+  _atualizarDuracaoObra(ini, fim);
+  log('Gantt','Datas da obra atualizadas','Concluído');
 }
 
 function renderGanttMetricas(){
