@@ -2672,8 +2672,10 @@ async function salvarOrcamento(){
     if(error){alert('Erro ao salvar: '+error.message);return;}
     await log('Orçamento',`Proposta atualizada — ${cli.nome}: ${titulo}`,payload.status);
   } else {
-    const{count}=await SB.from('orcamentos').select('*',{count:'exact',head:true});
-    payload.numero=(count||0)+1;
+    // Gera número sequencial via função do banco (nunca volta atrás)
+    const{data:seqData,error:seqErr}=await SB.rpc('proximo_numero_orcamento');
+    if(seqErr){alert('Erro ao gerar número: '+seqErr.message);return;}
+    payload.numero=seqData;
     payload.criado_por=null;
     const{data:novo,error}=await SB.from('orcamentos').insert(payload).select().single();
     if(error){alert('Erro ao criar: '+error.message);return;}
