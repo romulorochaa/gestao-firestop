@@ -741,7 +741,7 @@ tr:hover td{background:var(--surface2)}
         <div class="cli-search-wrap" id="cliw-v">
           <span class="cli-search-icon">🔍</span>
           <input class="cli-search-input" id="cli-input-v" placeholder="Buscar cliente..." autocomplete="off"
-            oninput="cliSearch('v')" onfocus="cliOpen('v')" onblur="setTimeout(()=>cliClose('v'),180)">
+            oninput="cliSearch('v')" onfocus="cliOpen('v')" onblur="setTimeout(()=>cliClose('v'),300)">
           <button class="cli-search-clear" id="cli-clear-v" onclick="cliClear('v')">×</button>
           <div class="cli-dropdown" id="cli-drop-v"></div>
         </div>
@@ -924,7 +924,7 @@ tr:hover td{background:var(--surface2)}
         <div class="cli-search-wrap" id="cliw-b">
           <span class="cli-search-icon">🔍</span>
           <input class="cli-search-input" id="cli-input-b" placeholder="Buscar cliente..." autocomplete="off"
-            oninput="cliSearch('b')" onfocus="cliOpen('b')" onblur="setTimeout(()=>cliClose('b'),180)">
+            oninput="cliSearch('b')" onfocus="cliOpen('b')" onblur="setTimeout(()=>cliClose('b'),300)">
           <button class="cli-search-clear" id="cli-clear-b" onclick="cliClear('b')">×</button>
           <div class="cli-dropdown" id="cli-drop-b"></div>
         </div>
@@ -1223,7 +1223,7 @@ tr:hover td{background:var(--surface2)}
           <div class="cli-search-wrap" id="cliw-orc">
             <span class="cli-search-icon">🔍</span>
             <input class="cli-search-input" id="cli-input-orc" placeholder="Buscar cliente..." autocomplete="off"
-              oninput="cliSearch('orc')" onfocus="cliOpen('orc')" onblur="setTimeout(()=>cliClose('orc'),180)">
+              oninput="cliSearch('orc')" onfocus="cliOpen('orc')" onblur="setTimeout(()=>cliClose('orc'),300)">
             <button class="cli-search-clear" id="cli-clear-orc" onclick="cliClear('orc')">×</button>
             <div class="cli-dropdown" id="cli-drop-orc"></div>
           </div>
@@ -1474,8 +1474,7 @@ async function cliCarregar(){
 function cliInvalidarCache(){ _cliLista=[]; }
 
 function cliOpen(ctx){
-  cliSearch(ctx); // renderiza dropdown com todos ao abrir
-  document.getElementById(`cli-drop-${ctx}`).classList.add('open');
+  cliSearch(ctx);
 }
 
 function cliClose(ctx){
@@ -1493,13 +1492,16 @@ function cliSearch(ctx){
     drop.innerHTML=`<div class="cli-opt vazio">Nenhum cliente encontrado</div>`;
   } else {
     drop.innerHTML=filtrados.map(c=>`
-      <div class="cli-opt" onmousedown="cliSelecionar('${ctx}','${c.id}',${JSON.stringify(c.nome)})">
+      <div class="cli-opt"
+        data-id="${c.id}"
+        data-nome="${c.nome.replace(/"/g,'&quot;')}"
+        data-ctx="${ctx}"
+        onmousedown="event.preventDefault();cliSelecionar('${ctx}','${c.id}',this.dataset.nome)">
         <div class="cli-opt-name">${c.nome}</div>
         ${c.documento||c.cidade?`<div class="cli-opt-sub">${[c.documento,c.cidade].filter(Boolean).join(' · ')}</div>`:''}
       </div>`).join('');
   }
   drop.classList.add('open');
-  // Mostra/oculta botão limpar
   const clrBtn=document.getElementById(`cli-clear-${ctx}`);
   if(clrBtn) clrBtn.style.display=q?'block':'none';
 }
