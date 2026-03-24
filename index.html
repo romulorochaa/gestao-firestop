@@ -191,6 +191,26 @@ tr:hover td{background:var(--surface2)}
   .frow,.frow-3{grid-template-columns:1fr}
   .metrics{grid-template-columns:1fr 1fr}
 }
+/* ── BUSCA DE CLIENTE (componente reutilizável) ── */
+.cli-search-wrap{position:relative}
+.cli-search-input{width:100%;padding:9px 12px 9px 32px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;transition:border .15s;box-sizing:border-box}
+.cli-search-input:focus{border-color:var(--blue)}
+.cli-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text3);pointer-events:none}
+.cli-search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;line-height:1;padding:2px 4px;display:none}
+.cli-search-clear:hover{color:var(--text)}
+.cli-dropdown{position:absolute;top:calc(100% + 1px);left:0;right:0;background:var(--surface);border:0.5px solid var(--border2);border-radius:0 0 var(--r) var(--r);max-height:220px;overflow-y:auto;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none}
+.cli-dropdown.open{display:block}
+.cli-opt{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:0.5px solid var(--border);transition:background .1s}
+.cli-opt:last-child{border-bottom:none}
+.cli-opt:hover,.cli-opt.ativo{background:var(--blue-bg)}
+.cli-opt .cli-opt-name{font-weight:500}
+.cli-opt .cli-opt-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.cli-opt.vazio{color:var(--text3);cursor:default;font-style:italic}
+.cli-opt.vazio:hover{background:none}
+.cli-badge{display:none;align-items:center;gap:8px;margin-top:6px;padding:6px 10px;background:var(--blue-bg);border:0.5px solid var(--blue);border-radius:var(--r);font-size:12px;font-weight:500}
+.cli-badge.show{display:flex}
+.cli-badge-clear{background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;line-height:1;padding:0;margin-left:auto}
+.cli-badge-clear:hover{color:var(--red)}
 </style>
 </head>
 <body>
@@ -471,10 +491,35 @@ tr:hover td{background:var(--surface2)}
       <!-- CORPO DE BOMBEIROS -->
       <div class="page" id="page-bombeiros">
         <div class="page-title">Corpo de Bombeiros</div>
-        <div class="page-sub">Acompanhamento de AVCB, projetos preventivos e vistorias</div>
+        <div class="page-sub">Acompanhamento de AVCB, CLCB e CLEP</div>
         <div id="alertas-cb"></div>
-        <div class="card">
-          <div class="card-header"><div class="card-title">Processos em andamento</div><button class="btn btn-primary btn-sm" id="btn-novo-proc" onclick="openModal('modal-processo')">+ Novo processo</button></div>
+
+        <!-- Métricas -->
+        <div class="metrics" style="margin-bottom:18px">
+          <div class="metric"><div class="metric-label">Total de processos</div><div class="metric-value" id="cb-total">—</div></div>
+          <div class="metric"><div class="metric-label">Em análise</div><div class="metric-value" id="cb-analise" style="color:var(--blue)">—</div></div>
+          <div class="metric"><div class="metric-label">Pendentes</div><div class="metric-value" id="cb-pendente" style="color:var(--amber)">—</div></div>
+          <div class="metric"><div class="metric-label">Aprovados</div><div class="metric-value" id="cb-aprovado" style="color:var(--green)">—</div></div>
+        </div>
+
+        <!-- Abas por tipo + SAPS -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:0">
+          <div class="tabs" style="margin-bottom:0">
+            <div class="tab active" id="cb-tab-andamento" onclick="cbSetAba('andamento')">Em andamento</div>
+            <div class="tab" id="cb-tab-avcb" onclick="cbSetAba('avcb')">AVCB</div>
+            <div class="tab" id="cb-tab-clcb" onclick="cbSetAba('clcb')">CLCB</div>
+            <div class="tab" id="cb-tab-clep" onclick="cbSetAba('clep')">CLEP</div>
+            <div class="tab" id="cb-tab-todos" onclick="cbSetAba('todos')">Todos</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="abrirSAPS()" style="display:flex;align-items:center;gap:5px">
+              🔍 Consultar no SAPS
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-novo-proc" onclick="novoProcessoCB()">+ Novo processo</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
           <div id="tabela-cb"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
         </div>
         <div id="timeline-wrap"></div>
@@ -665,6 +710,17 @@ tr:hover td{background:var(--surface2)}
       <div class="fg"><label>CEP</label><input id="c-cep" placeholder="59.067-500"></div>
     </div>
     <div class="frow"><div class="fg"><label>Status</label><select id="c-status"><option>Ativo</option><option>Proposta</option><option>Inativo</option></select></div><div class="fg"><label>Observações</label><input id="c-obs" placeholder="Informações adicionais..."></div></div>
+    <div class="fg" id="c-bloco-processo" style="display:none">
+      <label style="display:flex;align-items:center;gap:6px">
+        <span>Nº Processo CB (mais recente)</span>
+        <span style="font-size:11px;color:var(--text3)">atualizado automaticamente ao cadastrar um processo</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input id="c-ultimo-proc" readonly placeholder="Nenhum processo cadastrado"
+          style="flex:1;background:var(--surface2);cursor:default">
+        <button class="btn btn-sm" id="c-btn-saps" style="display:none" onclick="abrirSAPSdoCliente()">Ver no SAPS</button>
+      </div>
+    </div>
     <div class="modal-footer"><button class="btn" onclick="closeModal('modal-cliente')">Cancelar</button><button class="btn btn-primary" onclick="salvarCliente()">Salvar cliente</button></div>
   </div>
 </div>
@@ -681,7 +737,20 @@ tr:hover td{background:var(--surface2)}
 
     <!-- ABA DADOS -->
     <div class="modal-pane active" id="mvpane-dados">
-      <div class="frow"><div class="fg"><label>Cliente *</label><select id="v-cliente"><option value="">Selecione...</option></select></div><div class="fg"><label>Serviço *</label><input id="v-servico" placeholder="Ex: Projeto AVCB"></div></div>
+      <div class="frow"><div class="fg"><label>Cliente *</label>
+        <div class="cli-search-wrap" id="cliw-v">
+          <span class="cli-search-icon">🔍</span>
+          <input class="cli-search-input" id="cli-input-v" placeholder="Buscar cliente..." autocomplete="off"
+            oninput="cliSearch('v')" onfocus="cliOpen('v')" onblur="setTimeout(()=>cliClose('v'),180)">
+          <button class="cli-search-clear" id="cli-clear-v" onclick="cliClear('v')">×</button>
+          <div class="cli-dropdown" id="cli-drop-v"></div>
+        </div>
+        <div class="cli-badge" id="cli-badge-v">
+          <span id="cli-badge-txt-v"></span>
+          <button class="cli-badge-clear" onclick="cliClear('v')" title="Remover">×</button>
+        </div>
+        <input type="hidden" id="v-cliente">
+      </div><div class="fg"><label>Serviço *</label><input id="v-servico" placeholder="Ex: Projeto AVCB"></div></div>
       <div class="frow"><div class="fg"><label>Valor total (R$)</label><input id="v-valor" type="number" min="0" placeholder="0,00" oninput="calcularParcelamento()"></div><div class="fg"><label>Responsável</label><select id="v-resp"><option value="">Selecione...</option></select></div></div>
       <div class="frow"><div class="fg"><label>Etapa</label><select id="v-etapa"><option>Iniciado</option><option>Proposta</option><option>Negociação</option><option>Fechado</option><option>Cancelado</option></select></div><div class="fg"><label>Data</label><input id="v-data" type="date"></div></div>
       <div class="frow-1 fg"><label>Observações</label><textarea id="v-obs" placeholder="Detalhes do serviço..."></textarea></div>
@@ -844,12 +913,124 @@ tr:hover td{background:var(--surface2)}
 <!-- PROCESSO CB -->
 <div class="overlay" id="modal-processo">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title">Novo processo — Corpo de Bombeiros</div><button class="close-btn" onclick="closeModal('modal-processo')">×</button></div>
-    <div class="frow"><div class="fg"><label>Cliente *</label><select id="b-cliente"><option value="">Selecione...</option></select></div><div class="fg"><label>Tipo *</label><select id="b-tipo"><option>AVCB novo</option><option>Renovação AVCB</option><option>Projeto preventivo</option><option>Adequação</option><option>Vistoria</option></select></div></div>
-    <div class="frow"><div class="fg"><label>Nº Protocolo CB</label><input id="b-protocolo" placeholder="CB-2026-0000"></div><div class="fg"><label>Prazo</label><input id="b-prazo" type="date"></div></div>
-    <div class="frow-1 fg" style="margin-bottom:14px"><label>Etapa atual</label><select id="b-etapa"><option>Levantamento e projeto</option><option>Protocolo no CB</option><option>Pagamento de taxas</option><option>Análise técnica</option><option>Aguardando vistoria</option><option>Vistoria realizada</option><option>Aprovação final</option><option>AVCB emitido</option></select></div>
-    <div class="frow-1 fg"><label>Observações</label><textarea id="b-obs" placeholder="Detalhes..."></textarea></div>
-    <div class="modal-footer"><button class="btn" onclick="closeModal('modal-processo')">Cancelar</button><button class="btn btn-primary" onclick="salvarProcesso()">Salvar processo</button></div>
+    <div class="modal-header">
+      <div class="modal-title" id="cb-modal-titulo">Novo processo — Corpo de Bombeiros</div>
+      <button class="close-btn" onclick="fecharModalCB()">×</button>
+    </div>
+    <!-- Cliente e Nº Processo -->
+    <div class="frow">
+      <div class="fg">
+        <label>Cliente *</label>
+        <div class="cli-search-wrap" id="cliw-b">
+          <span class="cli-search-icon">🔍</span>
+          <input class="cli-search-input" id="cli-input-b" placeholder="Buscar cliente..." autocomplete="off"
+            oninput="cliSearch('b')" onfocus="cliOpen('b')" onblur="setTimeout(()=>cliClose('b'),180)">
+          <button class="cli-search-clear" id="cli-clear-b" onclick="cliClear('b')">×</button>
+          <div class="cli-dropdown" id="cli-drop-b"></div>
+        </div>
+        <div class="cli-badge" id="cli-badge-b">
+          <span id="cli-badge-txt-b"></span>
+          <button class="cli-badge-clear" onclick="cliClear('b')" title="Remover">×</button>
+        </div>
+        <input type="hidden" id="b-cliente" onchange="cbClienteChange()">
+      </div>
+      <div class="fg" style="max-width:180px">
+        <label>Nº Processo CB</label>
+        <input id="b-protocolo" placeholder="Ex: 2026-000123">
+      </div>
+    </div>
+    <!-- Grupo e Tipo -->
+    <div class="frow">
+      <div class="fg">
+        <label>Grupo *</label>
+        <select id="b-grupo" onchange="cbGrupoChange()">
+          <option value="AVCB">AVCB</option>
+          <option value="CLCB">CLCB</option>
+          <option value="CLEP">CLEP</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Tipo *</label>
+        <select id="b-tipo">
+          <option value="1ª Aprovação">1ª Aprovação</option>
+          <option value="Renovação">Renovação</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select id="b-status">
+          <option value="Em análise">Em análise</option>
+          <option value="Pendente">Pendente</option>
+          <option value="Aprovado">Aprovado</option>
+          <option value="Reprovado">Reprovado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>Prazo / Vencimento</label>
+        <input id="b-prazo" type="date">
+      </div>
+      <div class="fg">
+        <label>Responsável interno</label>
+        <input id="b-responsavel" placeholder="Nome do técnico">
+      </div>
+    </div>
+    <div class="fg">
+      <label>Observações</label>
+      <textarea id="b-obs" placeholder="Detalhes, pendências, documentos faltantes..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="fecharModalCB()">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarProcesso()">Salvar processo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SAPS -->
+<div class="overlay" id="modal-saps">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">Consultar processo no SAPS</div>
+      <button class="close-btn" onclick="closeModal('modal-saps')">×</button>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:16px;font-size:13px">
+      O SAPS exige que você informe o <strong>Nº do Processo</strong> e o <strong>CNPJ/CPF</strong> do interessado diretamente no site. Selecione um processo abaixo para copiar os dados rapidamente.
+    </div>
+    <!-- Seletor de processo -->
+    <div class="fg" style="margin-bottom:14px">
+      <label>Selecionar processo cadastrado</label>
+      <select id="saps-sel-processo" onchange="sapsPreencherDados()">
+        <option value="">— Selecione para copiar os dados —</option>
+      </select>
+    </div>
+    <div id="saps-dados" style="display:none;background:var(--blue-bg);border:0.5px solid var(--blue);border-radius:var(--r);padding:14px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Nº do Processo</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <strong id="saps-num-proc" style="font-family:'DM Mono',monospace;font-size:15px">—</strong>
+            <button class="btn btn-sm" onclick="copiarTexto('saps-num-proc')">Copiar</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">CNPJ/CPF do cliente</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <strong id="saps-cnpj" style="font-family:'DM Mono',monospace;font-size:15px">—</strong>
+            <button class="btn btn-sm" onclick="copiarTexto('saps-cnpj')">Copiar</button>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text2)">Cliente: <span id="saps-cliente-nome">—</span></div>
+    </div>
+    <div style="margin-bottom:6px;font-size:13px;color:var(--text2)">Clique no botão abaixo para abrir o SAPS em uma nova aba:</div>
+    <div class="modal-footer" style="justify-content:flex-start;gap:10px">
+      <button class="btn btn-primary" onclick="window.open('https://sistemascbm.rn.gov.br/serten/portal/conprojeto','_blank')">
+        Abrir SAPS — CBMRN 🔗
+      </button>
+      <button class="btn" onclick="closeModal('modal-saps')">Fechar</button>
+    </div>
   </div>
 </div>
 
@@ -1039,7 +1220,18 @@ tr:hover td{background:var(--surface2)}
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:12px">Dados do cliente</div>
       <div class="frow">
         <div class="fg"><label>Cliente *</label>
-          <select id="orc-cliente" onchange="preencherDadosCliente()"><option value="">Selecione o cliente cadastrado...</option></select>
+          <div class="cli-search-wrap" id="cliw-orc">
+            <span class="cli-search-icon">🔍</span>
+            <input class="cli-search-input" id="cli-input-orc" placeholder="Buscar cliente..." autocomplete="off"
+              oninput="cliSearch('orc')" onfocus="cliOpen('orc')" onblur="setTimeout(()=>cliClose('orc'),180)">
+            <button class="cli-search-clear" id="cli-clear-orc" onclick="cliClear('orc')">×</button>
+            <div class="cli-dropdown" id="cli-drop-orc"></div>
+          </div>
+          <div class="cli-badge" id="cli-badge-orc">
+            <span id="cli-badge-txt-orc"></span>
+            <button class="cli-badge-clear" onclick="cliClear('orc')" title="Remover">×</button>
+          </div>
+          <input type="hidden" id="orc-cliente" onchange="preencherDadosCliente()">
         </div>
         <div class="fg"><label>CPF / CNPJ</label><input id="orc-cliente-doc" placeholder="Preenchido automaticamente pelo cadastro"></div>
       </div>
@@ -1259,6 +1451,8 @@ async function openModal(id){
     document.querySelector('.modal-tab').classList.add('active');
     document.querySelectorAll('.modal-pane').forEach(p=>p.classList.remove('active'));
     document.getElementById('mvpane-dados').classList.add('active');
+    // Reseta busca de cliente
+    cliResetar('v');
   }
   await popularSelects();
   document.getElementById(id).classList.add('open');
@@ -1268,18 +1462,95 @@ document.querySelectorAll('.overlay').forEach(m=>{
   m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
 });
 
+// ── BUSCA DE CLIENTE — motor reutilizável ─────────────────────
+let _cliLista = []; // cache global de clientes
+
+async function cliCarregar(){
+  if(_cliLista.length) return; // já carregado
+  const{data}=await SB.from('clientes').select('id,nome,documento,cidade').order('nome');
+  _cliLista=data||[];
+}
+
+function cliInvalidarCache(){ _cliLista=[]; }
+
+function cliOpen(ctx){
+  cliSearch(ctx); // renderiza dropdown com todos ao abrir
+  document.getElementById(`cli-drop-${ctx}`).classList.add('open');
+}
+
+function cliClose(ctx){
+  document.getElementById(`cli-drop-${ctx}`)?.classList.remove('open');
+}
+
+function cliSearch(ctx){
+  const q=(document.getElementById(`cli-input-${ctx}`)?.value||'').toLowerCase().trim();
+  const drop=document.getElementById(`cli-drop-${ctx}`);
+  if(!drop) return;
+  const filtrados=q
+    ? _cliLista.filter(c=>c.nome.toLowerCase().includes(q)||(c.documento||'').includes(q)||(c.cidade||'').toLowerCase().includes(q))
+    : _cliLista;
+  if(!filtrados.length){
+    drop.innerHTML=`<div class="cli-opt vazio">Nenhum cliente encontrado</div>`;
+  } else {
+    drop.innerHTML=filtrados.map(c=>`
+      <div class="cli-opt" onmousedown="cliSelecionar('${ctx}','${c.id}',${JSON.stringify(c.nome)})">
+        <div class="cli-opt-name">${c.nome}</div>
+        ${c.documento||c.cidade?`<div class="cli-opt-sub">${[c.documento,c.cidade].filter(Boolean).join(' · ')}</div>`:''}
+      </div>`).join('');
+  }
+  drop.classList.add('open');
+  // Mostra/oculta botão limpar
+  const clrBtn=document.getElementById(`cli-clear-${ctx}`);
+  if(clrBtn) clrBtn.style.display=q?'block':'none';
+}
+
+function cliSelecionar(ctx, id, nome){
+  // Preenche hidden input e dispara onchange
+  const hidden=document.getElementById(
+    ctx==='v'?'v-cliente': ctx==='b'?'b-cliente': ctx==='orc'?'orc-cliente': ctx
+  );
+  if(hidden){ hidden.value=id; hidden.dispatchEvent(new Event('change')); }
+  // Mostra badge
+  document.getElementById(`cli-badge-txt-${ctx}`).textContent=nome;
+  document.getElementById(`cli-badge-${ctx}`).classList.add('show');
+  // Limpa input de busca
+  document.getElementById(`cli-input-${ctx}`).value='';
+  document.getElementById(`cli-clear-${ctx}`).style.display='none';
+  cliClose(ctx);
+}
+
+function cliClear(ctx){
+  const hidden=document.getElementById(
+    ctx==='v'?'v-cliente': ctx==='b'?'b-cliente': ctx==='orc'?'orc-cliente': ctx
+  );
+  if(hidden){ hidden.value=''; hidden.dispatchEvent(new Event('change')); }
+  document.getElementById(`cli-badge-${ctx}`).classList.remove('show');
+  document.getElementById(`cli-badge-txt-${ctx}`).textContent='';
+  document.getElementById(`cli-input-${ctx}`).value='';
+  document.getElementById(`cli-clear-${ctx}`).style.display='none';
+  cliClose(ctx);
+}
+
+function cliPreencherValor(ctx, id, nome){
+  // Usado para pré-selecionar um cliente ao abrir um modal de edição
+  const hidden=document.getElementById(
+    ctx==='v'?'v-cliente': ctx==='b'?'b-cliente': ctx==='orc'?'orc-cliente': ctx
+  );
+  if(hidden) hidden.value=id;
+  if(nome){
+    document.getElementById(`cli-badge-txt-${ctx}`).textContent=nome;
+    document.getElementById(`cli-badge-${ctx}`).classList.add('show');
+  }
+  document.getElementById(`cli-input-${ctx}`).value='';
+}
+
+function cliResetar(ctx){
+  cliClear(ctx);
+}
+
 async function popularSelects(){
-  const [{data:cl},{data:fn}]=await Promise.all([
-    SB.from('clientes').select('id,nome').order('nome'),
-    SB.from('funcionarios').select('id,nome').eq('status','Ativo').order('nome'),
-  ]);
-  ['v-cliente','b-cliente'].forEach(sid=>{
-    const s=document.getElementById(sid);if(!s)return;
-    const cur=s.value;
-    s.innerHTML='<option value="">Selecione...</option>';
-    (cl||[]).forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.nome}</option>`);
-    s.value=cur;
-  });
+  await cliCarregar(); // garante cache carregado
+  const{data:fn}=await SB.from('funcionarios').select('id,nome').eq('status','Ativo').order('nome');
   const vr=document.getElementById('v-resp');
   if(vr){
     vr.innerHTML='<option value="">Selecione...</option>';
@@ -1516,6 +1787,7 @@ function novoCliente(){
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('c-status').value='Ativo';
+  document.getElementById('c-bloco-processo').style.display='none';
   document.querySelector('#modal-cliente .modal-title').textContent='Novo cliente';
   document.getElementById('modal-cliente').classList.add('open');
 }
@@ -1524,7 +1796,6 @@ function editarCliente(id){
   const c = _clientes.find(x=>x.id===id);
   if(!c) return;
   _clienteEditandoId = id;
-  // Preenche o modal com os dados existentes
   document.getElementById('c-nome').value   = c.nome||'';
   document.getElementById('c-doc').value    = c.documento||'';
   document.getElementById('c-tel').value    = c.telefone||'';
@@ -1536,9 +1807,37 @@ function editarCliente(id){
   document.getElementById('c-cep').value    = c.cep||'';
   document.getElementById('c-status').value = c.status||'Ativo';
   document.getElementById('c-obs').value    = c.observacoes||'';
-  // Muda título do modal
+  // Nº Processo CB
+  const blocoProc=document.getElementById('c-bloco-processo');
+  const inputProc=document.getElementById('c-ultimo-proc');
+  const btnSaps=document.getElementById('c-btn-saps');
+  if(c.ultimo_processo_cb){
+    inputProc.value=c.ultimo_processo_cb;
+    blocoProc.style.display='block';
+    btnSaps.style.display='inline-flex';
+  } else {
+    inputProc.value='';
+    blocoProc.style.display='block'; // mostra mesmo vazio para info
+    btnSaps.style.display='none';
+  }
   document.querySelector('#modal-cliente .modal-title').textContent = 'Editar cliente';
   document.getElementById('modal-cliente').classList.add('open');
+}
+
+async function abrirSAPSdoCliente(){
+  // Abre modal SAPS filtrado pelo cliente atual
+  if(!_clienteEditandoId) return;
+  closeModal('modal-cliente');
+  await abrirSAPS();
+  // Pré-seleciona o processo mais recente do cliente
+  const sel=document.getElementById('saps-sel-processo');
+  for(let opt of sel.options){
+    if(opt.getAttribute('data-cid')===_clienteEditandoId){
+      sel.value=opt.value;
+      await sapsPreencherDados();
+      break;
+    }
+  }
 }
 
 async function salvarCliente(){
@@ -1577,6 +1876,7 @@ async function salvarCliente(){
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('c-status').value='Ativo';
+  cliInvalidarCache(); // força recarregar lista nos próximos modais
   renderClientes(); renderDashboard();
 }
 
@@ -1619,7 +1919,12 @@ async function abrirDetalheVenda(id){
   const{data:v}=await SB.from('vendas').select('*').eq('id',id).single();
   await popularSelects();
   document.getElementById('modal-venda-titulo').textContent='Editar venda';
-  document.getElementById('v-cliente').value=v.cliente_id||'';
+  // Preenche busca de cliente
+  cliResetar('v');
+  if(v.cliente_id){
+    const cli=_cliLista.find(c=>c.id===v.cliente_id);
+    cliPreencherValor('v',v.cliente_id,cli?.nome||v.cliente_nome||'');
+  }
   document.getElementById('v-servico').value=v.servico;
   document.getElementById('v-valor').value=v.valor;
   document.getElementById('v-resp').value=v.responsavel_nome||'';
@@ -2410,33 +2715,265 @@ async function salvarFuncionario(){
 }
 
 // ── BOMBEIROS ─────────────────────────────────────────────────
-async function renderBombeiros(){
-  const{data}=await SB.from('processos_cb').select('*').order('criado_em',{ascending:false});
-  const procs=data||[];
-  const alertas=document.getElementById('alertas-cb');alertas.innerHTML='';
-  procs.filter(p=>{const d=diasAte(p.prazo);return d!==null&&d<=7&&d>=0;}).forEach(p=>alertas.innerHTML+=`<div class="alert alert-red">⚠ ${p.cliente_nome} — ${p.tipo}: prazo em ${diasAte(p.prazo)} dia(s)</div>`);
-  const el=document.getElementById('tabela-cb');
-  if(!procs.length){el.innerHTML='<div class="empty">Nenhum processo cadastrado.</div>';return;}
-  el.innerHTML=`<table><tr><th>Cliente</th><th>Tipo</th><th>Protocolo</th><th>Etapa</th><th>Prazo</th><th>Ações</th></tr>
-  ${procs.map(p=>{
-    const d=diasAte(p.prazo);
-    const prazoStr=p.prazo?`${fmtData(p.prazo)} <span style="font-size:11px;color:${d<0?'var(--red)':d<=7?'var(--amber)':'var(--text3)'}">${d<0?'(vencido)':d===0?'(hoje)':d<=7?`(${d}d)`:''}</span>`:'—';
-    return`<tr><td><strong>${p.cliente_nome}</strong></td><td>${p.tipo}</td><td style="font-family:'DM Mono',monospace;font-size:12px">${p.protocolo||'—'}</td><td>${badge(p.etapa)}</td><td>${prazoStr}</td><td><div class="btn-group"><button class="btn btn-sm" onclick="verTimeline('${p.id}')">Timeline</button>${podeEditar()?`<button class="btn btn-sm" onclick="avancarEtapa('${p.id}')">Avançar</button>`:''}${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('processos_cb','${p.id}')">Excluir</button>`:''}</div></td></tr>`;
-  }).join('')}</table>`;
+// ── CORPO DE BOMBEIROS ────────────────────────────────────────
+let _cbAbaAtiva='andamento';
+let _cbProcessoEditandoId=null;
+
+function cbSetAba(aba){
+  _cbAbaAtiva=aba;
+  ['andamento','avcb','clcb','clep','todos'].forEach(a=>{
+    const el=document.getElementById(`cb-tab-${a}`);
+    if(el) el.classList.toggle('active',a===aba);
+  });
+  renderBombeiros();
+}
+
+function cbGrupoChange(){
+  const grupo=document.getElementById('b-grupo').value;
+  const selTipo=document.getElementById('b-tipo');
+  if(grupo==='CLEP'){
+    selTipo.innerHTML='<option value="CLEP">CLEP</option>';
+    selTipo.disabled=true;
+  } else {
+    selTipo.innerHTML='<option value="1ª Aprovação">1ª Aprovação</option><option value="Renovação">Renovação</option>';
+    selTipo.disabled=false;
+  }
+}
+
+async function cbClienteChange(){
+  // Preenche o último nº processo do cliente se houver
+  const cid=document.getElementById('b-cliente').value;
+  if(!cid) return;
+  const{data:p}=await SB.from('processos_cb').select('protocolo')
+    .eq('cliente_id',cid).not('protocolo','is',null)
+    .order('criado_em',{ascending:false}).limit(1);
+  // Só preenche se campo estiver vazio
+  const campo=document.getElementById('b-protocolo');
+  if(p&&p.length&&!campo.value) campo.value=p[0].protocolo||'';
+}
+
+async function novoProcessoCB(){
+  _cbProcessoEditandoId=null;
+  document.getElementById('cb-modal-titulo').textContent='Novo processo — Corpo de Bombeiros';
+  ['b-protocolo','b-obs','b-responsavel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('b-prazo').value='';
+  document.getElementById('b-grupo').value='AVCB';
+  document.getElementById('b-status').value='Em análise';
+  cbGrupoChange();
+  await cliCarregar();
+  cliResetar('b');
+  document.getElementById('modal-processo').classList.add('open');
+}
+
+async function editarProcessoCB(id){
+  const{data:p}=await SB.from('processos_cb').select('*').eq('id',id).single();
+  if(!p) return;
+  _cbProcessoEditandoId=id;
+  document.getElementById('cb-modal-titulo').textContent='Editar processo — Corpo de Bombeiros';
+  await cliCarregar();
+  cliResetar('b');
+  if(p.cliente_id){
+    const cli=_cliLista.find(c=>c.id===p.cliente_id);
+    cliPreencherValor('b',p.cliente_id,cli?.nome||p.cliente_nome||'');
+  }
+  document.getElementById('b-protocolo').value=p.protocolo||'';
+  document.getElementById('b-grupo').value=p.grupo||'AVCB';
+  cbGrupoChange();
+  document.getElementById('b-tipo').value=p.tipo||'1ª Aprovação';
+  document.getElementById('b-status').value=p.status||'Em análise';
+  document.getElementById('b-prazo').value=p.prazo||'';
+  document.getElementById('b-responsavel').value=p.responsavel||'';
+  document.getElementById('b-obs').value=p.observacoes||'';
+  document.getElementById('modal-processo').classList.add('open');
+}
+
+function fecharModalCB(){
+  _cbProcessoEditandoId=null;
+  closeModal('modal-processo');
 }
 
 async function salvarProcesso(){
   if(!podeEditar()){alert('Sem permissão.');return;}
   const cid=document.getElementById('b-cliente').value;
   if(!cid){alert('Selecione o cliente.');return;}
-  const{data:cli}=await SB.from('clientes').select('nome').eq('id',cid).single();
-  const tipo=document.getElementById('b-tipo').value;
-  const{error}=await SB.from('processos_cb').insert({cliente_id:cid,cliente_nome:cli?.nome||'',tipo,protocolo:document.getElementById('b-protocolo').value,prazo:document.getElementById('b-prazo').value||null,etapa:document.getElementById('b-etapa').value,observacoes:document.getElementById('b-obs').value});
+  const{data:cli}=await SB.from('clientes').select('nome,documento').eq('id',cid).single();
+  const grupo   = document.getElementById('b-grupo').value;
+  const tipo    = document.getElementById('b-tipo').value;
+  const status  = document.getElementById('b-status').value;
+  const protocolo=document.getElementById('b-protocolo').value.trim();
+  const payload={
+    cliente_id:   cid,
+    cliente_nome: cli?.nome||'',
+    grupo,
+    tipo,
+    status,
+    protocolo,
+    prazo:        document.getElementById('b-prazo').value||null,
+    responsavel:  document.getElementById('b-responsavel').value,
+    observacoes:  document.getElementById('b-obs').value,
+    // Mantém campo etapa para compatibilidade com timeline existente
+    etapa: status,
+  };
+  let error;
+  if(_cbProcessoEditandoId){
+    ({error}=await SB.from('processos_cb').update(payload).eq('id',_cbProcessoEditandoId));
+    // Atualiza nº processo mais recente no cliente também na edição
+    if(!error && protocolo){
+      await SB.from('clientes').update({ultimo_processo_cb:protocolo}).eq('id',cid);
+    }
+  } else {
+    ({error}=await SB.from('processos_cb').insert(payload));
+    // Atualiza nº processo mais recente no cliente
+    if(!error && protocolo){
+      await SB.from('clientes').update({ultimo_processo_cb:protocolo}).eq('id',cid);
+    }
+  }
   if(error){alert('Erro: '+error.message);return;}
-  closeModal('modal-processo');
-  ['b-protocolo','b-obs'].forEach(id=>document.getElementById(id).value='');
-  await log('Bombeiros',`Processo ${tipo} — ${cli?.nome||''}`,document.getElementById('b-etapa').value);
+  fecharModalCB();
+  ['b-protocolo','b-obs','b-responsavel'].forEach(id=>document.getElementById(id).value='');
+  log('Bombeiros',`${grupo} ${tipo} — ${cli?.nome||''}`,status);
   renderBombeiros();renderDashboard();
+}
+
+async function renderBombeiros(){
+  const{data}=await SB.from('processos_cb').select('*').order('criado_em',{ascending:false});
+  const procs=data||[];
+
+  // Métricas
+  document.getElementById('cb-total').textContent=procs.length;
+  document.getElementById('cb-analise').textContent=procs.filter(p=>p.status==='Em análise').length;
+  document.getElementById('cb-pendente').textContent=procs.filter(p=>p.status==='Pendente').length;
+  document.getElementById('cb-aprovado').textContent=procs.filter(p=>p.status==='Aprovado').length;
+
+  // Alertas de prazo
+  const alertas=document.getElementById('alertas-cb');
+  alertas.innerHTML='';
+  procs.filter(p=>{const d=diasAte(p.prazo);return d!==null&&d<=7&&d>=0&&p.status!=='Aprovado';})
+    .forEach(p=>alertas.innerHTML+=`<div class="alert alert-amber">⚠ ${p.cliente_nome} — ${p.grupo} ${p.tipo}: prazo em ${diasAte(p.prazo)} dia(s)</div>`);
+  procs.filter(p=>{const d=diasAte(p.prazo);return d!==null&&d<0&&p.status!=='Aprovado';})
+    .forEach(p=>alertas.innerHTML+=`<div class="alert alert-red">⚠ ${p.cliente_nome} — ${p.grupo} ${p.tipo}: prazo vencido há ${Math.abs(diasAte(p.prazo))} dia(s)</div>`);
+
+  // Filtra por aba
+  let lista=procs;
+  if(_cbAbaAtiva==='andamento') lista=procs.filter(p=>['Em análise','Pendente'].includes(p.status));
+  else if(_cbAbaAtiva==='avcb')  lista=procs.filter(p=>p.grupo==='AVCB');
+  else if(_cbAbaAtiva==='clcb')  lista=procs.filter(p=>p.grupo==='CLCB');
+  else if(_cbAbaAtiva==='clep')  lista=procs.filter(p=>p.grupo==='CLEP');
+
+  // Atualiza contadores das abas
+  document.getElementById('cb-tab-andamento').textContent=`Em andamento (${procs.filter(p=>['Em análise','Pendente'].includes(p.status)).length})`;
+  document.getElementById('cb-tab-avcb').textContent=`AVCB (${procs.filter(p=>p.grupo==='AVCB').length})`;
+  document.getElementById('cb-tab-clcb').textContent=`CLCB (${procs.filter(p=>p.grupo==='CLCB').length})`;
+  document.getElementById('cb-tab-clep').textContent=`CLEP (${procs.filter(p=>p.grupo==='CLEP').length})`;
+  document.getElementById('cb-tab-todos').textContent=`Todos (${procs.length})`;
+
+  const el=document.getElementById('tabela-cb');
+  if(!lista.length){
+    el.innerHTML=`<div class="empty">Nenhum processo nesta categoria.</div>`;
+    return;
+  }
+
+  // Cor por status
+  const corStatus={
+    'Em análise': 'b-blue',
+    'Pendente':   'b-amber',
+    'Aprovado':   'b-green',
+    'Reprovado':  'b-red',
+    'Cancelado':  'b-gray',
+  };
+
+  el.innerHTML=`<table>
+    <tr><th>Cliente</th><th>Grupo / Tipo</th><th>Nº Processo</th><th>Status</th><th>Prazo</th><th>Responsável</th><th>Ações</th></tr>
+    ${lista.map(p=>{
+      const d=diasAte(p.prazo);
+      const vencido=d!==null&&d<0&&p.status!=='Aprovado';
+      const prazoStr=p.prazo
+        ?`${fmtData(p.prazo)} <span style="font-size:11px;color:${vencido?'var(--red)':d<=7?'var(--amber)':'var(--text3)'}">${vencido?'(vencido)':d===0?'(hoje)':d<=7?`(${d}d)`:''}</span>`:'—';
+      const numProc=p.protocolo
+        ?`<span style="font-family:'DM Mono',monospace;font-size:12px">${p.protocolo}</span>
+          <button class="btn btn-sm" style="padding:1px 6px;font-size:10px" onclick="abrirSAPSComProcesso('${p.id}')">SAPS</button>`
+        :'—';
+      return`<tr>
+        <td><strong>${p.cliente_nome}</strong></td>
+        <td>
+          <span style="font-size:11px;font-weight:600;color:var(--blue)">${p.grupo||'—'}</span>
+          <span style="font-size:11px;color:var(--text3)"> · ${p.tipo||'—'}</span>
+        </td>
+        <td>${numProc}</td>
+        <td><span class="badge ${corStatus[p.status]||'b-gray'}">${p.status||'—'}</span></td>
+        <td style="font-size:12px">${prazoStr}</td>
+        <td style="font-size:12px;color:var(--text2)">${p.responsavel||'—'}</td>
+        <td><div class="btn-group">
+          ${podeEditar()?`<button class="btn btn-sm" onclick="editarProcessoCB('${p.id}')">Editar</button>`:''}
+          <button class="btn btn-sm" onclick="verTimeline('${p.id}')">Timeline</button>
+          ${podeExcluir()?`<button class="btn btn-sm btn-danger" onclick="excluir('processos_cb','${p.id}')">Excluir</button>`:''}
+        </div></td>
+      </tr>`;
+    }).join('')}
+  </table>`;
+}
+
+// ── SAPS ──────────────────────────────────────────────────────
+async function abrirSAPS(){
+  // Popula select com processos que têm nº processo cadastrado
+  const{data:procs}=await SB.from('processos_cb')
+    .select('id,protocolo,cliente_nome,cliente_id,grupo,tipo')
+    .not('protocolo','is',null)
+    .order('criado_em',{ascending:false});
+  const sel=document.getElementById('saps-sel-processo');
+  sel.innerHTML='<option value="">— Selecione para copiar os dados —</option>';
+  (procs||[]).forEach(p=>{
+    sel.innerHTML+=`<option value="${p.id}" data-protocolo="${p.protocolo}" data-cliente="${p.cliente_nome}" data-cid="${p.cliente_id}">
+      ${p.protocolo} — ${p.cliente_nome} (${p.grupo} ${p.tipo})
+    </option>`;
+  });
+  document.getElementById('saps-dados').style.display='none';
+  document.getElementById('modal-saps').classList.add('open');
+}
+
+async function abrirSAPSComProcesso(processoId){
+  await abrirSAPS();
+  document.getElementById('saps-sel-processo').value=processoId;
+  await sapsPreencherDados();
+  // Auto-copia o Nº Processo para a área de transferência
+  const numProc=document.getElementById('saps-num-proc')?.textContent||'';
+  if(numProc&&numProc!=='—'){
+    navigator.clipboard.writeText(numProc).catch(()=>{});
+    // Feedback visual no botão copiar do número
+    const btnCopy=document.getElementById('saps-num-proc')?.nextElementSibling;
+    if(btnCopy){
+      const orig=btnCopy.textContent;
+      btnCopy.textContent='✓ Copiado!';
+      setTimeout(()=>btnCopy.textContent=orig,2000);
+    }
+  }
+}
+
+async function sapsPreencherDados(){
+  const sel=document.getElementById('saps-sel-processo');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt||!opt.value){document.getElementById('saps-dados').style.display='none';return;}
+  const protocolo=opt.getAttribute('data-protocolo')||'';
+  const clienteNome=opt.getAttribute('data-cliente')||'';
+  const cid=opt.getAttribute('data-cid')||'';
+  // Busca documento do cliente
+  let doc='—';
+  if(cid){
+    const{data:cl}=await SB.from('clientes').select('documento').eq('id',cid).single();
+    doc=cl?.documento||'—';
+  }
+  document.getElementById('saps-num-proc').textContent=protocolo||'—';
+  document.getElementById('saps-cnpj').textContent=doc;
+  document.getElementById('saps-cliente-nome').textContent=clienteNome;
+  document.getElementById('saps-dados').style.display='block';
+}
+
+function copiarTexto(elementId){
+  const txt=document.getElementById(elementId)?.textContent||'';
+  navigator.clipboard.writeText(txt).then(()=>{
+    const btn=document.getElementById(elementId).nextElementSibling;
+    if(btn){const orig=btn.textContent;btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent=orig,1500);}
+  }).catch(()=>alert('Copie manualmente: '+txt));
 }
 
 async function verTimeline(id){
@@ -2564,18 +3101,19 @@ async function novoOrcamento(){
   if(!podeEditar()){alert('Sem permissão.');return;}
   ORC_ATIVO=null; _itensOrc=[];
   document.getElementById('orc-modal-titulo').textContent='Nova proposta comercial';
-  ['orc-titulo','orc-responsavel','orc-cliente-doc','orc-cliente-end','orc-cliente-cidade','orc-prazo','orc-cond-pagto','orc-obs'].forEach(id=>{
+  ['orc-titulo','orc-responsavel','orc-cliente-doc','orc-cliente-end','orc-cliente-cidade',
+   'orc-cliente-bairro','orc-cliente-uf','orc-cliente-cep','orc-prazo','orc-cond-pagto','orc-obs'].forEach(id=>{
     const e=document.getElementById(id);if(e)e.value='';
   });
   document.getElementById('orc-data').value=hoje();
   document.getElementById('orc-validade').value='10';
   document.getElementById('orc-desconto').value='0';
   document.getElementById('orc-status').value='Rascunho';
-  // Bloqueia abas que precisam de ID salvo
   ['orc-alerta-itens','orc-alerta-cond','orc-alerta-preview'].forEach(id=>document.getElementById(id).style.display='flex');
   ['orc-itens-conteudo','orc-cond-conteudo','orc-preview-conteudo'].forEach(id=>document.getElementById(id).style.display='none');
   _resetModalOrc();
-  await popularSelectOrc();
+  await cliCarregar();
+  cliResetar('orc');
   document.getElementById('modal-orcamento').classList.add('open');
 }
 
@@ -2586,9 +3124,15 @@ async function abrirOrcamento(id){
     SB.from('itens_orcamento').select('*').eq('orcamento_id',id).order('numero_item'),
   ]);
   _itensOrc=itens||[];
-  await popularSelectOrc();
+  await cliCarregar();
   document.getElementById('orc-modal-titulo').textContent=`Proposta Nº ${String(o.numero||0).padStart(5,'0')}`;
-  document.getElementById('orc-cliente').value=o.cliente_id||'';
+  // Preenche busca de cliente
+  cliResetar('orc');
+  if(o.cliente_id){
+    const cli=_cliLista.find(c=>c.id===o.cliente_id);
+    cliPreencherValor('orc',o.cliente_id,cli?.nome||o.cliente_nome||'');
+  }
+  // Preenche dados do cliente manualmente (já salvos no orçamento)
   document.getElementById('orc-cliente-doc').value   = o.cliente_doc||'';
   document.getElementById('orc-cliente-end').value   = o.cliente_end||'';
   document.getElementById('orc-cliente-bairro').value= o.cliente_bairro||'';
@@ -2619,19 +3163,21 @@ async function abrirPreviewOrc(id){
 }
 
 async function popularSelectOrc(){
-  const{data:cl}=await SB.from('clientes').select('id,nome,documento,rua,bairro,cidade,uf,cep').order('nome');
-  _clientesOrc=cl||[];
-  const s=document.getElementById('orc-cliente');
-  const cur=s.value;
-  s.innerHTML='<option value="">Selecione o cliente...</option>';
-  _clientesOrc.forEach(c=>s.innerHTML+=`<option value="${c.id}">${c.nome}</option>`);
-  s.value=cur;
+  // Mantida para compatibilidade — agora usa cache CLI
+  await cliCarregar();
+  _clientesOrc=_cliLista.map(c=>({...c}));
 }
 
 async function preencherDadosCliente(){
   const cid=document.getElementById('orc-cliente').value;
-  const cli=_clientesOrc.find(c=>c.id===cid);
-  if(!cli)return;
+  if(!cid) return;
+  // Busca do cache, ou do banco se necessário
+  let cli=_cliLista.find(c=>c.id===cid);
+  if(!cli){
+    const{data}=await SB.from('clientes').select('*').eq('id',cid).single();
+    cli=data;
+  }
+  if(!cli) return;
   document.getElementById('orc-cliente-doc').value   = cli.documento||'';
   document.getElementById('orc-cliente-end').value   = cli.rua||'';
   document.getElementById('orc-cliente-bairro').value= cli.bairro||'';
