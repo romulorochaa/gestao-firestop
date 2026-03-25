@@ -2229,21 +2229,22 @@ async function renderFinanceiro(){
 
   // Aplica filtro nos lançamentos
   const lanc=_finFiltrarPorData(lancAll||[], 'data_lancamento');
-  // Parcelas: filtro por vencimento (pendentes) ou recebimento (recebidas)
+  // Parcelas recebidas: filtra por data_recebimento (igual ao dashboard)
   const parcFiltradas=(parcAll||[]).filter(p=>{
     const f=_finGetFiltro();
     if(!f) return true;
+    // Recebidas → filtra por data_recebimento; Pendentes → filtra por data_vencimento
     const campo=p.status==='Recebido'?(p.data_recebimento||p.data_vencimento):p.data_vencimento;
-    if(!campo) return false;
-    const dt=new Date(campo+'T12:00:00');
+    if(!campo) return p.status==='Pendente'; // pendente sem data: inclui sempre
+    const dt=new Date(campo.split('T')[0]+'T12:00:00');
     if(f.ano && dt.getFullYear()!==f.ano) return false;
     if(f.mes && dt.getMonth()+1!==f.mes)  return false;
     return true;
   });
 
-  // Métricas do período filtrado
+  // Métricas — usa valor_recebido quando disponível (igual ao dashboard)
   const recLanc=lanc.filter(l=>l.tipo==='Receita'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
-  const recParc=parcFiltradas.filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor),0);
+  const recParc=parcFiltradas.filter(p=>p.status==='Recebido').reduce((s,p)=>s+Number(p.valor_recebido!=null?p.valor_recebido:p.valor),0);
   const rec=recLanc+recParc;
   const des=lanc.filter(l=>l.tipo==='Despesa'&&l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
   const pendParc=(parcAll||[]).filter(p=>p.status==='Pendente').reduce((s,p)=>s+Number(p.valor),0);
@@ -2261,7 +2262,9 @@ async function renderFinanceiro(){
     id:p.id,tipo:'Receita',
     data_lancamento:p.data_recebimento||p.data_vencimento,
     descricao:`Parcela ${p.numero}/${p.total_parcelas} — ${p.venda_servico||''}`,
-    origem:p.cliente_nome,valor:p.valor,status:'Recebido',_parcela:true
+    origem:p.cliente_nome,
+    valor:p.valor_recebido!=null?p.valor_recebido:p.valor,
+    status:'Recebido',_parcela:true
   }));
   const todos=[...lanc,...parcelasComoLanc].sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
 
@@ -2412,7 +2415,7 @@ async function renderLancFiltro(tipo){
       descricao:`Parcela ${p.numero}/${p.total_parcelas} — ${p.venda_servico||''}`,
       origem:p.cliente_nome,
       categoria:'Venda de serviços',
-      valor:p.valor,
+      valor:p.valor_recebido!=null?p.valor_recebido:p.valor, // usa valor líquido (ISS)
       status:'Recebido',
     }));
   }
@@ -2431,7 +2434,7 @@ async function renderLancFiltro(tipo){
   let resumoHtml='';
   if(tipo==='Receita'){
     const totalLanc=lancFiltrados.filter(l=>l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
-    const totalParc=parcRecebidas.reduce((s,p)=>s+Number(p.valor),0);
+    const totalParc=parcRecebidas.reduce((s,p)=>s+Number(p.valor_recebido!=null?p.valor_recebido:p.valor),0);
     const totalGeral=totalLanc+totalParc;
     resumoHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
       <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
