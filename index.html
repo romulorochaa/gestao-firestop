@@ -995,39 +995,49 @@ tr:hover td{background:var(--surface2)}
       <div class="modal-title">Consultar processo no SAPS</div>
       <button class="close-btn" onclick="closeModal('modal-saps')">×</button>
     </div>
-    <div style="background:var(--surface2);border-radius:var(--r);padding:14px;margin-bottom:16px;font-size:13px">
-      O SAPS exige que você informe o <strong>Nº do Processo</strong> e o <strong>CNPJ/CPF</strong> do interessado diretamente no site. Selecione um processo abaixo para copiar os dados rapidamente.
-    </div>
+
     <!-- Seletor de processo -->
     <div class="fg" style="margin-bottom:14px">
       <label>Selecionar processo cadastrado</label>
       <select id="saps-sel-processo" onchange="sapsPreencherDados()">
-        <option value="">— Selecione para copiar os dados —</option>
+        <option value="">— Selecione um processo —</option>
       </select>
     </div>
-    <div id="saps-dados" style="display:none;background:var(--blue-bg);border:0.5px solid var(--blue);border-radius:var(--r);padding:14px;margin-bottom:16px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Nº do Processo</div>
+
+    <!-- Dados do processo -->
+    <div id="saps-dados" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div style="background:var(--surface2);border-radius:var(--r);padding:12px">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nº do Processo</div>
           <div style="display:flex;align-items:center;gap:8px">
-            <strong id="saps-num-proc" style="font-family:'DM Mono',monospace;font-size:15px">—</strong>
-            <button class="btn btn-sm" onclick="copiarTexto('saps-num-proc')">Copiar</button>
+            <strong id="saps-num-proc" style="font-family:'DM Mono',monospace;font-size:18px">—</strong>
+            <button class="btn btn-sm" onclick="copiarTexto('saps-num-proc')" id="saps-btn-copy-num">Copiar</button>
           </div>
         </div>
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:3px">CNPJ/CPF do cliente</div>
+        <div style="background:var(--surface2);border-radius:var(--r);padding:12px">
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">CNPJ/CPF <span style="font-weight:400;text-transform:none">(sem símbolos)</span></div>
           <div style="display:flex;align-items:center;gap:8px">
-            <strong id="saps-cnpj" style="font-family:'DM Mono',monospace;font-size:15px">—</strong>
-            <button class="btn btn-sm" onclick="copiarTexto('saps-cnpj')">Copiar</button>
+            <strong id="saps-cnpj" style="font-family:'DM Mono',monospace;font-size:18px">—</strong>
+            <button class="btn btn-sm" onclick="copiarTexto('saps-cnpj')" id="saps-btn-copy-doc">Copiar</button>
           </div>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--text2)">Cliente: <span id="saps-cliente-nome">—</span></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px">
+        Cliente: <strong id="saps-cliente-nome">—</strong>
+      </div>
+
+      <!-- Instrução rápida -->
+      <div style="background:var(--amber-bg);border:0.5px solid #f5d79e;border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+        💡 <strong>Como consultar:</strong> clique em <em>"Copiar Nº e abrir SAPS"</em> abaixo — o número do processo será copiado automaticamente. Cole no campo do site e informe o CNPJ/CPF para consultar.
+      </div>
     </div>
-    <div style="margin-bottom:6px;font-size:13px;color:var(--text2)">Clique no botão abaixo para abrir o SAPS em uma nova aba:</div>
+
     <div class="modal-footer" style="justify-content:flex-start;gap:10px">
-      <button class="btn btn-primary" onclick="window.open('https://sistemascbm.rn.gov.br/serten/portal/conprojeto','_blank')">
-        Abrir SAPS — CBMRN 🔗
+      <button class="btn btn-primary" id="saps-btn-abrir" onclick="sapsAbrirComCopia()" style="display:none">
+        📋 Copiar Nº e abrir SAPS
+      </button>
+      <button class="btn" onclick="window.open('https://sistemascbm.rn.gov.br/serten/portal/conprojeto','_blank')">
+        Abrir SAPS sem copiar 🔗
       </button>
       <button class="btn" onclick="closeModal('modal-saps')">Fechar</button>
     </div>
@@ -1357,7 +1367,7 @@ let USER={id:'anonimo'},PERFIL={nivel:'admin',nome:'Firestop'},VENDA_ATIVA=null,
 document.getElementById('login-wrap').style.display='none';
 document.getElementById('app').classList.add('visible');
 
-const ETAPAS_CB = ['Levantamento e projeto','Protocolo no CB','Pagamento de taxas','Análise técnica','Aguardando vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
+const ETAPAS_CB = ['Levantamento e projeto','Pagamento de taxas','Protocolo no CB','Análise técnica','Aguardando vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
 
 const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtData = d => { if(!d) return '—'; const p=d.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
@@ -2969,33 +2979,49 @@ async function abrirSAPSComProcesso(processoId){
   const numProc=document.getElementById('saps-num-proc')?.textContent||'';
   if(numProc&&numProc!=='—'){
     navigator.clipboard.writeText(numProc).catch(()=>{});
-    // Feedback visual no botão copiar do número
-    const btnCopy=document.getElementById('saps-num-proc')?.nextElementSibling;
-    if(btnCopy){
-      const orig=btnCopy.textContent;
-      btnCopy.textContent='✓ Copiado!';
-      setTimeout(()=>btnCopy.textContent=orig,2000);
-    }
+    const btn=document.getElementById('saps-btn-copy-num');
+    if(btn){const orig=btn.textContent;btn.textContent='✓ Copiado!';setTimeout(()=>btn.textContent=orig,2000);}
   }
 }
 
 async function sapsPreencherDados(){
   const sel=document.getElementById('saps-sel-processo');
   const opt=sel.options[sel.selectedIndex];
-  if(!opt||!opt.value){document.getElementById('saps-dados').style.display='none';return;}
+  const dadosEl=document.getElementById('saps-dados');
+  const btnAbrir=document.getElementById('saps-btn-abrir');
+  if(!opt||!opt.value){
+    dadosEl.style.display='none';
+    btnAbrir.style.display='none';
+    return;
+  }
   const protocolo=opt.getAttribute('data-protocolo')||'';
   const clienteNome=opt.getAttribute('data-cliente')||'';
   const cid=opt.getAttribute('data-cid')||'';
-  // Busca documento do cliente
+  // Busca documento do cliente e remove todos os símbolos
   let doc='—';
   if(cid){
     const{data:cl}=await SB.from('clientes').select('documento').eq('id',cid).single();
-    doc=cl?.documento||'—';
+    // Remove pontos, traços, barras e espaços — deixa só números
+    doc=(cl?.documento||'').replace(/[.\-\/\s]/g,'')||'—';
   }
   document.getElementById('saps-num-proc').textContent=protocolo||'—';
   document.getElementById('saps-cnpj').textContent=doc;
   document.getElementById('saps-cliente-nome').textContent=clienteNome;
-  document.getElementById('saps-dados').style.display='block';
+  dadosEl.style.display='block';
+  btnAbrir.style.display=protocolo?'inline-flex':'none';
+}
+
+function sapsAbrirComCopia(){
+  // Copia o Nº do processo e abre o SAPS
+  const numProc=document.getElementById('saps-num-proc')?.textContent||'';
+  if(numProc&&numProc!=='—'){
+    navigator.clipboard.writeText(numProc).catch(()=>{});
+    const btn=document.getElementById('saps-btn-abrir');
+    const orig=btn.textContent;
+    btn.textContent='✓ Copiado! Abrindo...';
+    setTimeout(()=>{btn.textContent=orig;},2000);
+  }
+  window.open('https://sistemascbm.rn.gov.br/serten/portal/conprojeto','_blank');
 }
 
 function copiarTexto(elementId){
@@ -3009,9 +3035,62 @@ function copiarTexto(elementId){
 async function verTimeline(id){
   const{data:p}=await SB.from('processos_cb').select('*').eq('id',id).single();
   if(!p)return;
-  const idx=ETAPAS_CB.indexOf(p.etapa);
-  document.getElementById('timeline-wrap').innerHTML=`<div class="card"><div class="card-header"><div class="card-title">Timeline — ${p.cliente_nome} (${p.tipo})</div></div><div class="timeline">${ETAPAS_CB.map((e,i)=>`<div class="tl-item"><div class="tl-dot ${i<idx?'done':i===idx?'current':'wait'}">${i<idx?'✓':i===idx?'●':'○'}</div><div class="tl-info"><strong>${e}</strong><p>${i<idx?'Concluído':i===idx?'Em andamento':'Aguardando'}</p></div></div>`).join('')}</div></div>`;
+  _tlProcessoId=id;
+
+  const etapaAtual=p.etapa&&ETAPAS_CB.includes(p.etapa)?p.etapa:null;
+  const idx=etapaAtual?ETAPAS_CB.indexOf(etapaAtual):-1;
+
+  document.getElementById('timeline-wrap').innerHTML=`
+    <div class="card" style="margin-top:14px">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Timeline — ${p.cliente_nome}</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:2px">${p.grupo||''} ${p.tipo||''} ${p.protocolo?'· Nº '+p.protocolo:''}</div>
+        </div>
+        <button class="btn btn-sm" onclick="document.getElementById('timeline-wrap').innerHTML='';renderBombeiros()">Fechar</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:16px;padding:8px 12px;background:var(--surface2);border-radius:var(--r)">
+        Clique em qualquer etapa para marcá-la como <strong>etapa atual</strong> do processo.
+        ${etapaAtual?`Etapa atual: <strong style="color:var(--amber)">${etapaAtual}</strong>`:'<span style="color:var(--red)">Nenhuma etapa definida</span>'}
+      </div>
+      <div class="timeline">
+        ${ETAPAS_CB.map((e,i)=>{
+          const concluida=i<idx;
+          const atual=i===idx;
+          const aguardando=i>idx;
+          const dotClass=concluida?'done':atual?'current':'wait';
+          const dotIcon=concluida?'✓':atual?'●':'○';
+          const labelStatus=concluida?'<span style="color:var(--green);font-size:11px">✓ Concluída</span>':atual?'<span style="color:var(--amber);font-size:11px;font-weight:600">● Em andamento</span>':'<span style="color:var(--text3);font-size:11px">Aguardando</span>';
+          return`<div class="tl-item" style="cursor:pointer;border-radius:var(--r);padding:10px 8px;transition:background .15s;${atual?'background:var(--amber-bg);':concluida?'background:var(--green-bg);':''}"
+            onclick="marcarEtapaCB('${id}','${e}')"
+            onmouseover="this.style.background='var(--surface2)'"
+            onmouseout="this.style.background='${atual?'var(--amber-bg)':concluida?'var(--green-bg)':''}'">
+            <div class="tl-dot ${dotClass}">${dotIcon}</div>
+            <div class="tl-info" style="flex:1">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong style="font-size:13px">${e}</strong>
+                ${labelStatus}
+              </div>
+              ${atual?`<div style="margin-top:6px"><button class="btn btn-sm btn-primary" style="font-size:11px" onclick="event.stopPropagation();avancarEtapa('${id}')">Avançar para próxima →</button></div>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
   document.getElementById('timeline-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+let _tlProcessoId=null;
+
+async function marcarEtapaCB(id, etapa){
+  if(!podeEditar()){alert('Sem permissão.');return;}
+  // Se clicar na etapa atual, desmarca (volta a null)
+  const{data:p}=await SB.from('processos_cb').select('etapa').eq('id',id).single();
+  const novaEtapa=p?.etapa===etapa?null:etapa;
+  await SB.from('processos_cb').update({etapa:novaEtapa}).eq('id',id);
+  await log('Bombeiros',`Etapa ${novaEtapa?`marcada: "${novaEtapa}"`:'desmarcada'}`,novaEtapa||'Pendente');
+  renderBombeiros();
+  verTimeline(id); // re-renderiza a timeline atualizada
 }
 
 async function avancarEtapa(id){
@@ -3023,6 +3102,7 @@ async function avancarEtapa(id){
   await SB.from('processos_cb').update({etapa:novaEtapa}).eq('id',id);
   await log('Bombeiros',`${p.cliente_nome}: avançado para "${novaEtapa}"`,novaEtapa);
   renderBombeiros();
+  verTimeline(id);
 }
 
 // ── USUÁRIOS ─────────────────────────────────────────────────
