@@ -2579,6 +2579,31 @@ async function salvarLancamento(){
   const obraId  = document.getElementById('l-obra')?.value||null;
   const parcelado=document.getElementById('l-parcelado')?.checked&&tipo==='Despesa';
 
+  // ── Verificação de duplicata (somente em novos lançamentos) ──
+  if(!_lancEditandoId){
+    const dataCorte=new Date();
+    dataCorte.setDate(dataCorte.getDate()-3);
+    const corteISO=dataCorte.toISOString().split('T')[0];
+    const{data:dup}=await SB.from('lancamentos')
+      .select('id,data_lancamento,descricao,valor,origem')
+      .eq('tipo',tipo)
+      .eq('descricao',desc)
+      .eq('valor',Number(valor))
+      .eq('origem',origem||'')
+      .gte('data_lancamento',corteISO)
+      .limit(1);
+    if(dup&&dup.length>0){
+      const d=dup[0];
+      const confirmar=window.confirm(
+        `⚠️ Possível lançamento duplicado!\n\n`+
+        `Já existe um lançamento idêntico em ${fmtData(d.data_lancamento)}:\n`+
+        `"${d.descricao}" — ${fmt(d.valor)}${d.origem?' ('+d.origem+')':''}\n\n`+
+        `Deseja salvar mesmo assim?`
+      );
+      if(!confirmar) return;
+    }
+  }
+
   if(parcelado&&!_lancEditandoId){
     const qtd=parseInt(document.getElementById('l-parc-qtd').value||2);
     const venc=document.getElementById('l-parc-venc').value;
