@@ -538,7 +538,10 @@ tr:hover td{background:var(--surface2)}
         <div class="card">
           <div class="card-header">
             <div class="card-title">Propostas comerciais</div>
-            <button class="btn btn-primary btn-sm" id="btn-novo-orc" onclick="novoOrcamento()">+ Nova proposta</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-sm" id="btn-importar-orc" onclick="document.getElementById('modal-importar-orc').classList.add('open')">📄 Importar proposta</button>
+              <button class="btn btn-primary btn-sm" id="btn-novo-orc" onclick="novoOrcamento()">+ Nova proposta</button>
+            </div>
           </div>
           <div class="search-bar"><input type="text" placeholder="Buscar por cliente ou título..." oninput="buscarOrcamentos(this.value)"></div>
           <div id="tabela-orcamentos"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
@@ -790,6 +793,89 @@ tr:hover td{background:var(--surface2)}
         </div>
         <div id="parcelas-existentes"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORTAR PROPOSTA (IA) -->
+<div class="overlay" id="modal-importar-orc">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">Importar proposta com IA</div>
+      <button class="close-btn" onclick="closeModal('modal-importar-orc')">×</button>
+    </div>
+
+    <!-- Estado: aguardando upload -->
+    <div id="imp-estado-upload">
+      <div style="background:var(--blue-bg);border:0.5px solid var(--blue);border-radius:var(--r);padding:12px 14px;font-size:13px;margin-bottom:16px;line-height:1.6">
+        🤖 A IA irá ler o documento e extrair automaticamente: <strong>cliente, itens, valores, prazo e condições de pagamento</strong>. Funciona melhor com propostas geradas pelo sistema.
+      </div>
+      <div class="upload-area" id="imp-drop-area"
+        onclick="document.getElementById('imp-file-input').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+        ondragleave="this.style.borderColor=''"
+        ondrop="event.preventDefault();this.style.borderColor='';impHandleFile(event.dataTransfer.files[0])">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-weight:600;margin-bottom:4px">Clique ou arraste o arquivo aqui</div>
+        <div style="font-size:12px;color:var(--text3)">PDF ou DOCX — máx. 10MB</div>
+        <input type="file" id="imp-file-input" accept=".pdf,.docx,.doc" style="display:none" onchange="impHandleFile(this.files[0])">
+      </div>
+    </div>
+
+    <!-- Estado: processando -->
+    <div id="imp-estado-proc" style="display:none;text-align:center;padding:32px 16px">
+      <div class="spinner" style="width:36px;height:36px;border-width:3px;margin:0 auto 16px"></div>
+      <div style="font-size:14px;font-weight:500" id="imp-proc-msg">Lendo o documento...</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">Isso pode levar alguns segundos</div>
+    </div>
+
+    <!-- Estado: erro -->
+    <div id="imp-estado-erro" style="display:none;padding:16px;background:#fdecea;border-radius:var(--r);border:0.5px solid #f5c0bc">
+      <div style="font-weight:600;color:var(--red);margin-bottom:6px">⚠ Erro ao processar o documento</div>
+      <div id="imp-erro-msg" style="font-size:13px;color:var(--text2)"></div>
+      <button class="btn btn-sm" style="margin-top:12px" onclick="impResetar()">Tentar novamente</button>
+    </div>
+
+    <!-- Estado: revisão -->
+    <div id="imp-estado-revisao" style="display:none">
+      <div style="background:var(--green-bg);border:0.5px solid #a8d5a8;border-radius:var(--r);padding:10px 14px;font-size:13px;margin-bottom:14px">
+        ✅ IA extraiu os dados abaixo. Revise e confirme para criar o orçamento.
+      </div>
+      <!-- Cliente -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px">Cliente</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fg" style="margin-bottom:0"><label>Nome *</label><input id="imp-cli-nome"></div>
+          <div class="fg" style="margin-bottom:0"><label>CNPJ/CPF</label><input id="imp-cli-doc"></div>
+          <div class="fg" style="margin-bottom:0"><label>Telefone</label><input id="imp-cli-tel"></div>
+          <div class="fg" style="margin-bottom:0"><label>E-mail</label><input id="imp-cli-email"></div>
+          <div class="fg" style="margin-bottom:0"><label>Cidade</label><input id="imp-cli-cidade"></div>
+          <div class="fg" style="margin-bottom:0"><label>UF</label><input id="imp-cli-uf"></div>
+        </div>
+        <div id="imp-cli-status" style="margin-top:8px;font-size:12px"></div>
+      </div>
+      <div style="height:0.5px;background:var(--border);margin-bottom:14px"></div>
+      <!-- Proposta -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:8px">Proposta</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="fg" style="margin-bottom:0"><label>Título</label><input id="imp-titulo"></div>
+          <div class="fg" style="margin-bottom:0"><label>Prazo de execução</label><input id="imp-prazo"></div>
+          <div class="fg" style="margin-bottom:0"><label>Condições de pagamento</label><input id="imp-cond"></div>
+          <div class="fg" style="margin-bottom:0"><label>Validade (dias)</label><input id="imp-validade" type="number" value="10"></div>
+        </div>
+        <!-- Itens -->
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Itens / Serviços</div>
+        <div id="imp-itens-lista" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto"></div>
+      </div>
+      <div style="font-size:13px;text-align:right;padding:8px 0;border-top:0.5px solid var(--border);font-weight:600">
+        Total estimado: <span id="imp-total" style="color:var(--blue);font-family:'DM Mono',monospace">—</span>
+      </div>
+    </div>
+
+    <div class="modal-footer" id="imp-footer-revisao" style="display:none">
+      <button class="btn" onclick="impResetar()">Cancelar</button>
+      <button class="btn btn-primary" onclick="impCriarOrcamento()">Criar orçamento →</button>
     </div>
   </div>
 </div>
@@ -3746,6 +3832,289 @@ async function excluirOrc(id){
   await SB.from('itens_orcamento').delete().eq('orcamento_id',id);
   await SB.from('orcamentos').delete().eq('id',id);
   renderOrcamentos();
+}
+// ── IMPORTAR PROPOSTA COM IA ──────────────────────────────────
+let _impDados = null;
+
+function impResetar(){
+  _impDados=null;
+  document.getElementById('imp-estado-upload').style.display='block';
+  document.getElementById('imp-estado-proc').style.display='none';
+  document.getElementById('imp-estado-erro').style.display='none';
+  document.getElementById('imp-estado-revisao').style.display='none';
+  document.getElementById('imp-footer-revisao').style.display='none';
+  document.getElementById('imp-file-input').value='';
+}
+
+function impSetEstado(estado, msg=''){
+  ['upload','proc','erro','revisao'].forEach(e=>{
+    document.getElementById(`imp-estado-${e}`).style.display=e===estado?'block':'none';
+  });
+  document.getElementById('imp-footer-revisao').style.display=estado==='revisao'?'flex':'none';
+  if(estado==='proc'&&msg) document.getElementById('imp-proc-msg').textContent=msg;
+  if(estado==='erro'&&msg) document.getElementById('imp-erro-msg').textContent=msg;
+}
+
+async function impHandleFile(file){
+  if(!file) return;
+  const maxMB=10;
+  if(file.size>maxMB*1024*1024){impSetEstado('erro',`Arquivo muito grande. Máximo ${maxMB}MB.`);return;}
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(!['pdf','docx','doc'].includes(ext)){impSetEstado('erro','Formato não suportado. Use PDF ou DOCX.');return;}
+
+  impSetEstado('proc','Lendo o documento...');
+
+  try {
+    // Converte para base64
+    const base64=await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res(r.result.split(',')[1]);
+      r.onerror=rej;
+      r.readAsDataURL(file);
+    });
+
+    impSetEstado('proc','Enviando para a IA...');
+
+    // Monta a mensagem para a API
+    const isPdf=ext==='pdf';
+    const msgContent=[];
+
+    if(isPdf){
+      msgContent.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}});
+    } else {
+      // DOCX: envia como base64 com instrução de interpretar como documento Word
+      msgContent.push({type:'document',source:{type:'base64',media_type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',data:base64}});
+    }
+
+    msgContent.push({type:'text',text:`Você está lendo uma proposta comercial da empresa FIRESTOP ENGENHARIA.
+Extraia os dados e retorne SOMENTE um JSON válido, sem texto antes ou depois, sem markdown, no seguinte formato:
+{
+  "cliente": {
+    "nome": "",
+    "documento": "",
+    "telefone": "",
+    "email": "",
+    "endereco": "",
+    "bairro": "",
+    "cidade": "",
+    "uf": "",
+    "cep": ""
+  },
+  "proposta": {
+    "titulo": "",
+    "prazo_execucao": "",
+    "cond_pagto": "",
+    "validade_dias": 10,
+    "observacoes": ""
+  },
+  "itens": [
+    {
+      "descricao": "",
+      "quantidade": 1,
+      "valor_unitario": 0,
+      "valor_total": 0,
+      "prazo_dias": 0
+    }
+  ]
+}
+
+Regras:
+- Extraia TODOS os itens/serviços listados com seus valores
+- Valores devem ser numéricos (sem R$ ou pontos de milhar)
+- Se não encontrar um campo, deixe string vazia ou 0
+- O título da proposta deve ser um resumo do serviço principal
+- Retorne APENAS o JSON, nada mais`});
+
+    impSetEstado('proc','IA analisando o documento...');
+
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:msgContent}]
+      })
+    });
+
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err?.error?.message||`Erro da API: ${resp.status}`);
+    }
+
+    const data=await resp.json();
+    const texto=data.content?.map(c=>c.text||'').join('').trim();
+    // Remove possíveis marcadores markdown
+    const jsonLimpo=texto.replace(/```json|```/g,'').trim();
+    const dados=JSON.parse(jsonLimpo);
+
+    _impDados=dados;
+    impSetEstado('proc','Verificando cliente no sistema...');
+    await impPreencherRevisao(dados);
+
+  } catch(e){
+    console.error('Erro import:',e);
+    impSetEstado('erro', e.message||'Erro ao processar o documento. Tente novamente.');
+  }
+}
+
+async function impPreencherRevisao(dados){
+  const cli=dados.cliente||{};
+  const prop=dados.proposta||{};
+  const itens=dados.itens||[];
+
+  // Preenche campos do cliente
+  document.getElementById('imp-cli-nome').value=cli.nome||'';
+  document.getElementById('imp-cli-doc').value=cli.documento||'';
+  document.getElementById('imp-cli-tel').value=cli.telefone||'';
+  document.getElementById('imp-cli-email').value=cli.email||'';
+  document.getElementById('imp-cli-cidade').value=cli.cidade||'';
+  document.getElementById('imp-cli-uf').value=cli.uf||'';
+
+  // Verifica se cliente já existe (por documento ou nome)
+  const statusEl=document.getElementById('imp-cli-status');
+  const doc=(cli.documento||'').replace(/\D/g,'');
+  let clienteExistente=null;
+  if(doc){
+    const{data:c}=await SB.from('clientes').select('id,nome,documento').ilike('documento',`%${doc}%`).limit(1);
+    if(c&&c.length) clienteExistente=c[0];
+  }
+  if(!clienteExistente&&cli.nome){
+    const{data:c}=await SB.from('clientes').select('id,nome,documento').ilike('nome',`%${cli.nome.split(' ')[0]}%`).limit(1);
+    if(c&&c.length) clienteExistente=c[0];
+  }
+  if(clienteExistente){
+    statusEl.innerHTML=`<span style="color:var(--green)">✓ Cliente já cadastrado: <strong>${clienteExistente.nome}</strong></span>`;
+    statusEl.dataset.clienteId=clienteExistente.id;
+  } else {
+    statusEl.innerHTML=`<span style="color:var(--amber)">⚠ Cliente não encontrado — será cadastrado automaticamente ao confirmar.</span>`;
+    statusEl.dataset.clienteId='';
+  }
+
+  // Preenche campos da proposta
+  document.getElementById('imp-titulo').value=prop.titulo||'';
+  document.getElementById('imp-prazo').value=prop.prazo_execucao||'';
+  document.getElementById('imp-cond').value=prop.cond_pagto||'';
+  document.getElementById('imp-validade').value=prop.validade_dias||10;
+
+  // Renderiza itens
+  const listaEl=document.getElementById('imp-itens-lista');
+  listaEl.innerHTML=itens.map((it,i)=>`
+    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:8px;background:var(--surface2);border-radius:var(--r)">
+      <input value="${it.descricao||''}" id="imp-it-desc-${i}" style="padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)">
+      <input value="${it.quantidade||1}" id="imp-it-qtd-${i}" type="number" min="0.01" step="0.01"
+        style="width:60px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;font-size:12px;text-align:center;font-family:inherit;background:var(--surface);color:var(--text)"
+        oninput="impAtualizarTotal()">
+      <input value="${it.valor_unitario||0}" id="imp-it-vunit-${i}" type="number" min="0" step="0.01"
+        style="width:110px;padding:6px 8px;border:0.5px solid var(--border2);border-radius:6px;font-size:12px;font-family:'DM Mono',monospace;text-align:right;background:var(--surface);color:var(--text)"
+        oninput="impAtualizarTotal()">
+    </div>`).join('');
+
+  impAtualizarTotal();
+  impSetEstado('revisao');
+}
+
+function impAtualizarTotal(){
+  const lista=document.getElementById('imp-itens-lista');
+  const qtds=lista.querySelectorAll('[id^="imp-it-qtd-"]');
+  const vunits=lista.querySelectorAll('[id^="imp-it-vunit-"]');
+  let total=0;
+  qtds.forEach((q,i)=>total+=parseFloat(q.value||0)*parseFloat(vunits[i]?.value||0));
+  document.getElementById('imp-total').textContent=fmt(total);
+}
+
+async function impCriarOrcamento(){
+  const statusEl=document.getElementById('imp-cli-status');
+  const nomeCliente=document.getElementById('imp-cli-nome').value.trim();
+  if(!nomeCliente){alert('Informe o nome do cliente.');return;}
+
+  impSetEstado('proc','Cadastrando cliente e criando orçamento...');
+
+  try{
+    // 1. Garante cliente no banco
+    let clienteId=statusEl.dataset.clienteId||'';
+    if(!clienteId){
+      // Cria o cliente
+      const{data:novoCli,error:eCli}=await SB.from('clientes').insert({
+        nome:     nomeCliente,
+        documento:document.getElementById('imp-cli-doc').value||'',
+        telefone: document.getElementById('imp-cli-tel').value||'',
+        email:    document.getElementById('imp-cli-email').value||'',
+        cidade:   document.getElementById('imp-cli-cidade').value||'',
+        uf:       document.getElementById('imp-cli-uf').value||'',
+        status:   'Ativo',
+      }).select().single();
+      if(eCli) throw new Error('Erro ao cadastrar cliente: '+eCli.message);
+      clienteId=novoCli.id;
+      cliInvalidarCache();
+      log('Cliente','Cliente importado: '+nomeCliente,'Concluído');
+    }
+
+    // 2. Busca dados completos do cliente
+    const{data:cli}=await SB.from('clientes').select('*').eq('id',clienteId).single();
+
+    // 3. Gera número da proposta via sequence
+    const{data:seqData,error:seqErr}=await SB.rpc('proximo_numero_orcamento');
+    if(seqErr) throw new Error('Erro ao gerar número: '+seqErr.message);
+
+    // 4. Monta itens da revisão
+    const listaEl=document.getElementById('imp-itens-lista');
+    const qtds=[...listaEl.querySelectorAll('[id^="imp-it-qtd-"]')];
+    const vunits=[...listaEl.querySelectorAll('[id^="imp-it-vunit-"]')];
+    const descs=[...listaEl.querySelectorAll('[id^="imp-it-desc-"]')];
+    let subtotal=0;
+    const itensPayload=descs.map((d,i)=>{
+      const qtd=parseFloat(qtds[i]?.value||1);
+      const vunit=parseFloat(vunits[i]?.value||0);
+      const vtotal=parseFloat((qtd*vunit).toFixed(2));
+      subtotal+=vtotal;
+      return{numero_item:i+1,descricao:d.value||'',quantidade:qtd,valor_unitario:vunit,valor_total:vtotal,prazo_dias:0,progresso:0,status_execucao:'Pendente'};
+    });
+
+    // 5. Cria o orçamento
+    const titulo=document.getElementById('imp-titulo').value||'Proposta importada';
+    const{data:orc,error:eOrc}=await SB.from('orcamentos').insert({
+      numero:       seqData,
+      cliente_id:   clienteId,
+      cliente_nome: cli.nome,
+      cliente_doc:  cli.documento||'',
+      cliente_end:  cli.rua||'',
+      cliente_bairro:cli.bairro||'',
+      cliente_cidade:cli.cidade||'',
+      cliente_uf:   cli.uf||'',
+      cliente_cep:  cli.cep||'',
+      titulo,
+      responsavel:  'Firestop',
+      data_emissao: hoje(),
+      validade_dias:parseInt(document.getElementById('imp-validade').value||10),
+      status:       'Rascunho',
+      subtotal,
+      desconto:     0,
+      valor_total:  subtotal,
+      prazo_execucao:document.getElementById('imp-prazo').value||'',
+      cond_pagto:   document.getElementById('imp-cond').value||'',
+      observacoes:  _impDados?.proposta?.observacoes||'',
+    }).select().single();
+    if(eOrc) throw new Error('Erro ao criar orçamento: '+eOrc.message);
+
+    // 6. Insere itens
+    if(itensPayload.length){
+      const rows=itensPayload.map(it=>({...it,orcamento_id:orc.id}));
+      await SB.from('itens_orcamento').insert(rows);
+    }
+
+    log('Orçamento',`Proposta importada Nº ${String(seqData).padStart(5,'0')} — ${cli.nome}`,'Rascunho');
+
+    closeModal('modal-importar-orc');
+    impResetar();
+    await renderOrcamentos();
+    // Abre o orçamento para revisão final
+    await abrirOrcamento(orc.id);
+
+  } catch(e){
+    console.error(e);
+    impSetEstado('erro',e.message||'Erro ao criar orçamento.');
+  }
 }
 // ── FIM ORÇAMENTOS ────────────────────────────────────────────
 
