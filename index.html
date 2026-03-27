@@ -462,14 +462,23 @@ tr:hover td{background:var(--surface2)}
         <div id="ft-todos" style="display:none">
           <div class="card">
             <div class="card-header"><div class="card-title">Todos os lançamentos</div><button class="btn btn-primary btn-sm" id="btn-novo-lanc" onclick="openModal('modal-lancamento')">+ Lançamento</button></div>
+            <div id="lanc-filtros-bar"></div>
             <div id="tabela-lanc"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
           </div>
         </div>
         <div id="ft-receitas" style="display:none">
-          <div class="card"><div class="card-header"><div class="card-title">Receitas</div></div><div id="tabela-lanc-rec"></div></div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Receitas</div></div>
+            <div id="lanc-filtros-bar-rec"></div>
+            <div id="tabela-lanc-rec"></div>
+          </div>
         </div>
         <div id="ft-despesas" style="display:none">
-          <div class="card"><div class="card-header"><div class="card-title">Despesas</div></div><div id="tabela-lanc-des"></div></div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Despesas</div></div>
+            <div id="lanc-filtros-bar-des"></div>
+            <div id="tabela-lanc-des"></div>
+          </div>
         </div>
       </div>
 
@@ -538,10 +547,7 @@ tr:hover td{background:var(--surface2)}
         <div class="card">
           <div class="card-header">
             <div class="card-title">Propostas comerciais</div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-sm" id="btn-importar-orc" onclick="document.getElementById('modal-importar-orc').classList.add('open')">📄 Importar proposta</button>
-              <button class="btn btn-primary btn-sm" id="btn-novo-orc" onclick="novoOrcamento()">+ Nova proposta</button>
-            </div>
+            <button class="btn btn-primary btn-sm" id="btn-novo-orc" onclick="novoOrcamento()">+ Nova proposta</button>
           </div>
           <div class="search-bar"><input type="text" placeholder="Buscar por cliente ou título..." oninput="buscarOrcamentos(this.value)"></div>
           <div id="tabela-orcamentos"><div class="loading"><span class="spinner"></span>Carregando...</div></div>
@@ -2236,6 +2242,105 @@ async function marcarRecebido(parcelaId){
 // ── FILTRO FINANCEIRO ─────────────────────────────────────────
 let _finFiltro = 'mes'; // 'mes' | 'ano' | 'tudo' | 'custom'
 
+// ── FILTROS DE LANÇAMENTOS ────────────────────────────────────
+const _lancF = {
+  busca:     '',   // texto livre (descrição, origem)
+  categoria: '',   // categoria
+  status:    '',   // Confirmado | Pendente
+  ordem:     'data_desc', // data_desc | data_asc | valor_desc | valor_asc
+};
+
+const CATS_DESPESA=['Material','Mão de obra','ART','Impostos','Operacional','Aluguel','Contabilidade','Investimentos','Terceiros','Retirada','Outros'];
+const CATS_RECEITA=['Venda de serviços','Outros'];
+
+function lancFiltrosBar(ctx){
+  // ctx = 'todos' | 'rec' | 'des'
+  const tipo = ctx==='rec'?'Receita': ctx==='des'?'Despesa':'todos';
+  const cats = tipo==='Receita'?CATS_RECEITA: tipo==='Despesa'?CATS_DESPESA:[...CATS_RECEITA,...CATS_DESPESA];
+  const barId = ctx==='todos'?'lanc-filtros-bar': ctx==='rec'?'lanc-filtros-bar-rec':'lanc-filtros-bar-des';
+  const el=document.getElementById(barId);
+  if(!el) return;
+  el.innerHTML=`
+    <div style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 0 4px;border-bottom:0.5px solid var(--border);margin-bottom:10px;align-items:center">
+      <!-- Busca texto -->
+      <div style="position:relative;flex:1;min-width:180px">
+        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:12px;pointer-events:none">🔍</span>
+        <input id="lf-busca-${ctx}" value="${_lancF.busca}"
+          placeholder="Buscar por descrição ou cliente..."
+          style="width:100%;padding:7px 10px 7px 28px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:inherit;background:var(--surface);color:var(--text);box-sizing:border-box"
+          oninput="_lancF.busca=this.value;lancAplicarFiltros('${ctx}')">
+      </div>
+      <!-- Categoria -->
+      <select id="lf-cat-${ctx}" style="padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)"
+        onchange="_lancF.categoria=this.value;lancAplicarFiltros('${ctx}')">
+        <option value="">Todas categorias</option>
+        ${cats.map(c=>`<option value="${c}" ${_lancF.categoria===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <!-- Status -->
+      <select id="lf-status-${ctx}" style="padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)"
+        onchange="_lancF.status=this.value;lancAplicarFiltros('${ctx}')">
+        <option value="">Todos status</option>
+        <option value="Confirmado" ${_lancF.status==='Confirmado'?'selected':''}>Confirmado / Pago</option>
+        <option value="Pendente"   ${_lancF.status==='Pendente'?'selected':''}>Pendente</option>
+      </select>
+      <!-- Ordenação -->
+      <select id="lf-ordem-${ctx}" style="padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)"
+        onchange="_lancF.ordem=this.value;lancAplicarFiltros('${ctx}')">
+        <option value="data_desc"  ${_lancF.ordem==='data_desc'?'selected':''}>Data ↓ (mais recente)</option>
+        <option value="data_asc"   ${_lancF.ordem==='data_asc'?'selected':''}>Data ↑ (mais antigo)</option>
+        <option value="valor_desc" ${_lancF.ordem==='valor_desc'?'selected':''}>Valor ↓ (maior)</option>
+        <option value="valor_asc"  ${_lancF.ordem==='valor_asc'?'selected':''}>Valor ↑ (menor)</option>
+      </select>
+      <!-- Limpar filtros -->
+      ${_lancF.busca||_lancF.categoria||_lancF.status||_lancF.ordem!=='data_desc'
+        ?`<button class="btn btn-sm" onclick="lancLimparFiltros('${ctx}')" style="white-space:nowrap">✕ Limpar filtros</button>`:''}
+      <!-- Contagem -->
+      <span id="lf-count-${ctx}" style="font-size:12px;color:var(--text3);margin-left:auto"></span>
+    </div>`;
+}
+
+function lancLimparFiltros(ctx){
+  _lancF.busca=''; _lancF.categoria=''; _lancF.status=''; _lancF.ordem='data_desc';
+  lancAplicarFiltros(ctx);
+}
+
+function lancFiltrarOrdenar(lista){
+  let r=[...lista];
+  // Busca texto
+  if(_lancF.busca){
+    const q=_lancF.busca.toLowerCase();
+    r=r.filter(l=>(l.descricao||'').toLowerCase().includes(q)||(l.origem||'').toLowerCase().includes(q));
+  }
+  // Categoria
+  if(_lancF.categoria) r=r.filter(l=>l.categoria===_lancF.categoria);
+  // Status
+  if(_lancF.status) r=r.filter(l=>l.status===_lancF.status||(_lancF.status==='Confirmado'&&l.status==='Recebido'));
+  // Ordenação
+  r.sort((a,b)=>{
+    if(_lancF.ordem==='data_desc') return (b.data_lancamento||'')>(a.data_lancamento||'')?1:-1;
+    if(_lancF.ordem==='data_asc')  return (a.data_lancamento||'')>(b.data_lancamento||'')?1:-1;
+    if(_lancF.ordem==='valor_desc') return Number(b.valor)-Number(a.valor);
+    if(_lancF.ordem==='valor_asc')  return Number(a.valor)-Number(b.valor);
+    return 0;
+  });
+  return r;
+}
+
+// Cache dos dados brutos para re-filtrar sem nova query ao banco
+let _lancCache={todos:null, rec:null, des:null};
+
+function lancAplicarFiltros(ctx){
+  const raw=_lancCache[ctx];
+  if(!raw) return;
+  lancFiltrosBar(ctx);
+  const filtrado=lancFiltrarOrdenar(raw);
+  const countEl=document.getElementById(`lf-count-${ctx}`);
+  if(countEl) countEl.textContent=`${filtrado.length} lançamento${filtrado.length!==1?'s':''}`;
+  if(ctx==='todos')    _renderTabelaTodos(filtrado);
+  else if(ctx==='rec') _renderTabelaRec(filtrado);
+  else if(ctx==='des') _renderTabelaDes(filtrado);
+}
+
 function setFiltroFin(tipo){
   _finFiltro = tipo;
   const btns={mes:'f-btn-mes',ano:'f-btn-ano',tudo:'f-btn-tudo'};
@@ -2362,8 +2467,18 @@ async function renderFinanceiro(){
     valor:p.valor_recebido!=null?p.valor_recebido:p.valor,
     status:'Recebido',_parcela:true
   }));
-  const todos=[...lanc,...parcelasComoLanc].sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
+  const todosBrutos=[...lanc,...parcelasComoLanc];
+  _lancCache.todos=todosBrutos;
+  lancFiltrosBar('todos');
+  const todosExib=lancFiltrarOrdenar(todosBrutos);
+  const countEl=document.getElementById('lf-count-todos');
+  if(countEl) countEl.textContent=`${todosExib.length} lançamento${todosExib.length!==1?'s':''}`;
+  _renderTabelaTodos(todosExib);
 
+  renderParcelasFinanceiro(parcAll);
+}
+
+function _renderTabelaTodos(lista){
   const tplRow=(l)=>{
     const catBadge=l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—';
     return`<tr>
@@ -2380,9 +2495,7 @@ async function renderFinanceiro(){
     </tr>`;
   };
   const thead=`<table><tr><th>Data</th><th>Tipo</th><th>Descrição / Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th><th></th></tr>`;
-  document.getElementById('tabela-lanc').innerHTML=todos.length?thead+todos.map(tplRow).join('')+'</table>':'<div class="empty">Nenhum lançamento no período selecionado.</div>';
-
-  renderParcelasFinanceiro(parcAll);
+  document.getElementById('tabela-lanc').innerHTML=lista.length?thead+lista.map(tplRow).join('')+'</table>':'<div class="empty">Nenhum lançamento no período selecionado.</div>';
 }
 
 async function renderParcelasFinanceiro(parcelas){
@@ -2493,6 +2606,7 @@ async function confirmarRecebimento(){
 }
 
 async function renderLancFiltro(tipo){
+  const ctx=tipo==='Receita'?'rec':'des';
   const el=document.getElementById(tipo==='Receita'?'tabela-lanc-rec':'tabela-lanc-des');
 
   // Busca lançamentos manuais do tipo
@@ -2511,78 +2625,71 @@ async function renderLancFiltro(tipo){
       descricao:`Parcela ${p.numero}/${p.total_parcelas} — ${p.venda_servico||''}`,
       origem:p.cliente_nome,
       categoria:'Venda de serviços',
-      valor:p.valor_recebido!=null?p.valor_recebido:p.valor, // usa valor líquido (ISS)
+      valor:p.valor_recebido!=null?p.valor_recebido:p.valor,
       status:'Recebido',
     }));
   }
 
-  // Une e ordena por data
-  const data=[...lancFiltrados,...parcRecebidas]
-    .sort((a,b)=>(b.data_lancamento||'')>(a.data_lancamento||'')?1:-1);
+  // Cache bruto para re-filtrar sem nova query
+  const brutos=[...lancFiltrados,...parcRecebidas];
+  _lancCache[ctx]=brutos;
+  lancFiltrosBar(ctx);
+  const exib=lancFiltrarOrdenar(brutos);
+  const countEl2=document.getElementById(`lf-count-${ctx}`);
+  if(countEl2) countEl2.textContent=`${exib.length} lançamento${exib.length!==1?'s':''}`;
+  if(ctx==='rec') _renderTabelaRec(exib, lancFiltrados, parcRecebidas);
+  else            _renderTabelaDes(exib);
+}
 
-  if(!data.length){
-    el.innerHTML=`<div class="empty">Nenhuma receita no período selecionado.</div>`;
-    if(tipo==='Despesa') el.innerHTML=`<div class="empty">Nenhuma despesa no período selecionado.</div>`;
-    return;
-  }
+function _resumoReceitas(lancFiltrados, parcRecebidas){
+  const totalLanc=lancFiltrados.filter(l=>l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
+  const totalParc=parcRecebidas.reduce((s,p)=>s+Number(p.valor_recebido!=null?p.valor_recebido:p.valor),0);
+  const totalGeral=totalLanc+totalParc;
+  return`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
+      <span style="color:var(--text2)">Parcelas recebidas</span>
+      <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalParc)}</strong>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
+      <span style="color:var(--text2)">Lançamentos manuais</span>
+      <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalLanc)}</strong>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--green-bg);border:0.5px solid #a8d5a8;border-radius:20px;font-size:12px">
+      <span style="color:var(--text2)">Total receitas</span>
+      <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalGeral)}</strong>
+    </div>
+  </div>`;
+}
 
-  // Resumo para Receitas: total lançamentos manuais + total parcelas
-  let resumoHtml='';
-  if(tipo==='Receita'){
-    const totalLanc=lancFiltrados.filter(l=>l.status==='Confirmado').reduce((s,l)=>s+Number(l.valor),0);
-    const totalParc=parcRecebidas.reduce((s,p)=>s+Number(p.valor_recebido!=null?p.valor_recebido:p.valor),0);
-    const totalGeral=totalLanc+totalParc;
-    resumoHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
-        <span style="color:var(--text2)">Parcelas recebidas</span>
-        <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalParc)}</strong>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
-        <span style="color:var(--text2)">Lançamentos manuais</span>
-        <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalLanc)}</strong>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--green-bg);border:0.5px solid #a8d5a8;border-radius:20px;font-size:12px">
-        <span style="color:var(--text2)">Total receitas</span>
-        <strong style="color:var(--green);font-family:'DM Mono',monospace">${fmt(totalGeral)}</strong>
-      </div>
-    </div>`;
-  }
+function _resumoDespesas(lista){
+  const CATS=['Material','Mão de obra','ART','Impostos','Operacional','Aluguel','Contabilidade','Investimentos','Terceiros','Retirada','Outros'];
+  const totais={};
+  lista.filter(l=>l.status==='Confirmado').forEach(l=>{const c=l.categoria||'Outros';totais[c]=(totais[c]||0)+Number(l.valor);});
+  const cats=CATS.filter(c=>totais[c]>0);
+  if(!cats.length) return '';
+  const totalGeral=cats.reduce((s,c)=>s+totais[c],0);
+  return`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
+    ${cats.map(c=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
+      <span style="color:var(--text2)">${c}</span>
+      <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totais[c])}</strong>
+    </div>`).join('')}
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#fdecea;border:0.5px solid #f5c0bc;border-radius:20px;font-size:12px">
+      <span style="color:var(--text2)">Total despesas</span>
+      <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totalGeral)}</strong>
+    </div>
+  </div>`;
+}
 
-  // Resumo por categoria para Despesas
-  if(tipo==='Despesa'){
-    const CATS=['Material','Mão de obra','ART','Impostos','Operacional','Aluguel','Contabilidade','Investimentos','Terceiros','Retirada','Outros'];
-    const totais={};
-    data.filter(l=>l.status==='Confirmado').forEach(l=>{
-      const c=l.categoria||'Outros';
-      totais[c]=(totais[c]||0)+Number(l.valor);
-    });
-    const cats=CATS.filter(c=>totais[c]>0);
-    if(cats.length){
-      const totalGeral=cats.reduce((s,c)=>s+totais[c],0);
-      resumoHtml=`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r)">
-        ${cats.map(c=>`<div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface);border:0.5px solid var(--border);border-radius:20px;font-size:12px">
-          <span style="color:var(--text2)">${c}</span>
-          <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totais[c])}</strong>
-        </div>`).join('')}
-        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#fdecea;border:0.5px solid #f5c0bc;border-radius:20px;font-size:12px">
-          <span style="color:var(--text2)">Total despesas</span>
-          <strong style="color:var(--red);font-family:'DM Mono',monospace">${fmt(totalGeral)}</strong>
-        </div>
-      </div>`;
-    }
-  }
-
-  const tabela=`<table>
-    <tr>
-      <th>Data</th><th>Descrição</th><th>Categoria</th><th>Cliente / Obra</th>
-      <th>Valor</th><th>Status</th><th></th>
-    </tr>
-    ${data.map(l=>`<tr>
+function _tabelaLancRows(lista, corFn){
+  if(!lista.length) return '<div class="empty">Nenhum lançamento encontrado.</div>';
+  return`<table>
+    <tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Cliente / Obra</th><th>Valor</th><th>Status</th><th></th></tr>
+    ${lista.map(l=>`<tr>
       <td>${fmtData(l.data_lancamento)}</td>
       <td>${l.descricao}</td>
       <td>${l.categoria?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:0.5px solid var(--border)">${l.categoria}</span>`:'—'}</td>
       <td style="font-size:12px;color:var(--text2)">${l.origem||'—'}</td>
-      <td style="font-weight:500;color:${tipo==='Receita'?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace;font-size:12px">${fmt(l.valor)}</td>
+      <td style="font-weight:500;color:${corFn(l)};font-family:'DM Mono',monospace;font-size:12px">${fmt(l.valor)}</td>
       <td>${badge(l._parcela?'Recebido':l.status)}</td>
       <td><div class="btn-group">
         ${!l._parcela&&podeEditar()?`<button class="btn btn-sm" onclick="editarLancamento('${l.id}')">Editar</button>`:''}
@@ -2590,7 +2697,21 @@ async function renderLancFiltro(tipo){
       </div></td>
     </tr>`).join('')}
   </table>`;
-  el.innerHTML=resumoHtml+tabela;
+}
+
+function _renderTabelaRec(lista, lancFiltrados, parcRecebidas){
+  const raw=_lancCache.rec||[];
+  const lf=lancFiltrados||(raw.filter(l=>!l._parcela));
+  const pr=parcRecebidas||(raw.filter(l=>l._parcela));
+  document.getElementById('tabela-lanc-rec').innerHTML=
+    _resumoReceitas(lf,pr)+_tabelaLancRows(lista,()=>'var(--green)');
+}
+
+function _renderTabelaDes(lista){
+  // Resumo usa a lista completa sem filtro de texto/categoria para não distorcer totais
+  const brutos=_lancCache.des||lista;
+  document.getElementById('tabela-lanc-des').innerHTML=
+    _resumoDespesas(brutos)+_tabelaLancRows(lista,()=>'var(--red)');
 }
 
 async function lancTipoChange(){
@@ -3927,9 +4048,15 @@ Regras:
 
     impSetEstado('proc','IA analisando o documento...');
 
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    // Chama via Edge Function do Supabase (evita bloqueio CORS do navegador)
+    const SUPABASE_URL='https://hivswkbczfisdtprvhyg.supabase.co';
+    const SUPABASE_KEY='sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl';
+    const resp=await fetch(`${SUPABASE_URL}/functions/v1/anthropic-proxy`,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${SUPABASE_KEY}`,
+      },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:1000,
