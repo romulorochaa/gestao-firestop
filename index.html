@@ -3369,7 +3369,7 @@ async function verTimeline(id){
         ${etapas.map((e,i)=>{
           const done=i<idxA,cur=i===idxA;
           const dotC=done?'done':cur?'current':'wait';
-          return\`<div class="tl-item" style="cursor:pointer;border-radius:var(--r);padding:8px 6px;\${cur?'background:var(--amber-bg);':done?'background:var(--green-bg);':''}"
+          return `<div class="tl-item" style="cursor:pointer;border-radius:var(--r);padding:8px 6px;${cur?'background:var(--amber-bg);':done?'background:var(--green-bg);':''}"></div>`
             onclick="marcarEtapaCBSub('\${id}','\${campo}','\${e}')"
             onmouseover="this.style.background='var(--surface2)'"
             onmouseout="this.style.background='\${cur?'var(--amber-bg)':done?'var(--green-bg)':''}'" >
