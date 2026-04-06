@@ -3373,7 +3373,7 @@ async function verTimeline(id){
             onclick="marcarEtapaCBSub('\${id}','\${campo}','\${e}')"
             onmouseover="this.style.background='var(--surface2)'"
             onmouseout="this.style.background='\${cur?'var(--amber-bg)':done?'var(--green-bg)':''}'" >
-            <div class="tl-dot \${dotC}">\${done?'✓':cur?'●':'○'}</div>
+            <div class="tl-dot ${dotC}">${done?'✓':cur?'●':'○'}</div>
             <div class="tl-info" style="flex:1">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <strong style="font-size:12px">\${e}</strong>
