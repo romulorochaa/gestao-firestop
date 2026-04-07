@@ -3354,104 +3354,113 @@ async function verTimeline(id){
   if(!p)return;
   _tlProcessoId=id;
 
-  const isAVCB=p.grupo==='AVCB';
-  const etapaAtual=p.etapa&&ETAPAS_CB.includes(p.etapa)?p.etapa:null;
-  const idx=etapaAtual?ETAPAS_CB.indexOf(etapaAtual):-1;
-
   const ETAPAS_PROJETO=['Levantamento e projeto','Pagamento de taxas','Protocolo no CB','Análise técnica','Aprovação do projeto'];
   const ETAPAS_VISTORIA=['Agendamento de vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
 
-  function renderTL(etapas, etapaAtiva, campo, titulo, cor){
-    const idxA=etapaAtiva?etapas.indexOf(etapaAtiva):-1;
-    return`<div style="flex:1;min-width:220px">
-      <div style="font-size:12px;font-weight:600;color:${cor};margin-bottom:10px">${titulo}</div>
-      <div class="timeline">
-        ${etapas.map((e,i)=>{
-          const done=i<idxA,cur=i===idxA;
-          const dotC=done?'done':cur?'current':'wait';
-          return `<div class="tl-item" style="cursor:pointer;border-radius:var(--r);padding:8px 6px;${cur?'background:var(--amber-bg);':done?'background:var(--green-bg);':''}"></div>`
-            onclick="marcarEtapaCBSub('\${id}','\${campo}','\${e}')"
-            onmouseover="this.style.background='var(--surface2)'"
-            onmouseout="this.style.background='\${cur?'var(--amber-bg)':done?'var(--green-bg)':''}'" >
-            <div class="tl-dot ${dotC}">${done?'✓':cur?'●':'○'}</div>
-            <div class="tl-info" style="flex:1">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong style="font-size:12px">\${e}</strong>
-                <span style="font-size:10px;color:\${done?'var(--green)':cur?'var(--amber)':'var(--text3)'}">\${done?'✓ OK':cur?'● Atual':''}</span>
-              </div>
-              \${cur?'<div style="margin-top:4px"><button class="btn btn-sm btn-primary" style="font-size:10px" onclick="event.stopPropagation();avancarEtapaSub(\''+id+'\',' +'\''+campo+'\')">Avançar →</button></div>':''}
-            </div>
-          </div>\`;
-        }).join('')}
-      </div>
-    </div>`;
+  function tlItens(etapas, etapaAtiva, campo, pidStr){
+    const idxA = etapaAtiva ? etapas.indexOf(etapaAtiva) : -1;
+    return etapas.map((e,i)=>{
+      const done=i<idxA, cur=i===idxA;
+      const dotC=done?'done':cur?'current':'wait';
+      const dotI=done?'✓':cur?'●':'○';
+      const bg=cur?'background:var(--amber-bg);':done?'background:var(--green-bg);':'';
+      const lbl=done?'<span style="color:var(--green);font-size:10px">✓ OK</span>':
+                cur?'<span style="color:var(--amber);font-size:10px">● Atual</span>':'';
+      const btn=cur?`<div style="margin-top:4px"><button class="btn btn-sm btn-primary" style="font-size:10px"
+        onclick="event.stopPropagation();avancarEtapaSub('${pidStr}','${campo}')">Avançar →</button></div>`:'';
+      return `<div class="tl-item" style="cursor:pointer;border-radius:var(--r);padding:8px 6px;${bg}"
+        onclick="marcarEtapaCBSub('${pidStr}','${campo}','${e.replace(/'/g,"\\'")}')">
+        <div class="tl-dot ${dotC}">${dotI}</div>
+        <div class="tl-info" style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong style="font-size:12px">${e}</strong>${lbl}
+          </div>${btn}
+        </div>
+      </div>`;
+    }).join('');
   }
 
-  const ambosOk=p.status_projeto==='Aprovado'&&p.status_vistoria==='Aprovado';
+  const wrap = document.getElementById('timeline-wrap');
+  const isAVCB = p.grupo === 'AVCB';
+  const ambosOk = p.status_projeto==='Aprovado' && p.status_vistoria==='Aprovado';
 
-  document.getElementById('timeline-wrap').innerHTML=`
-    <div class="card" style="margin-top:14px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Timeline — ${p.cliente_nome}</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:2px">${p.grupo||''} ${p.tipo||''} ${p.protocolo?'· Nº '+p.protocolo:''}</div>
-        </div>
-        <button class="btn btn-sm" onclick="document.getElementById('timeline-wrap').innerHTML='';renderBombeiros()">Fechar</button>
+  let html = `<div class="card" style="margin-top:14px">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Timeline — ${p.cliente_nome}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${p.grupo||''} ${p.tipo||''} ${p.protocolo?'· Nº '+p.protocolo:''}</div>
       </div>
-      ${isAVCB?`
-        ${ambosOk?'<div style="padding:10px 12px;background:var(--green-bg);border:0.5px solid #a8d5a8;border-radius:var(--r);font-size:13px;color:var(--green);margin-bottom:14px;font-weight:600">✅ Projeto e Vistoria aprovados — AVCB pode ser emitido!</div>':''}
-        <div style="display:flex;gap:20px;flex-wrap:wrap">
-          ${renderTL(ETAPAS_PROJETO,p.etapa_projeto,'etapa_projeto','📐 Projeto','var(--blue)')}
-          <div style="width:0.5px;background:var(--border);flex-shrink:0"></div>
-          ${renderTL(ETAPAS_VISTORIA,p.etapa_vistoria,'etapa_vistoria','🔍 Vistoria','var(--amber)')}
-        </div>`
-      :`<div style="font-size:12px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:var(--surface2);border-radius:var(--r)">
-          Clique em qualquer etapa para marcá-la como atual.
-          ${etapaAtual?`Etapa: <strong style="color:var(--amber)">${etapaAtual}</strong>`:'<span style="color:var(--red)">Nenhuma etapa definida</span>'}
-        </div>
-        <div class="timeline">
-          ${ETAPAS_CB.map((e,i)=>{
-            const done=i<idx,cur=i===idx;
-            const dotC=done?'done':cur?'current':'wait';
-            return\`<div class="tl-item" style="cursor:pointer;border-radius:var(--r);padding:10px 8px;\${cur?'background:var(--amber-bg);':done?'background:var(--green-bg);':''}"
-              onclick="marcarEtapaCB('\${id}','\${e}')"
-              onmouseover="this.style.background='var(--surface2)'"
-              onmouseout="this.style.background='\${cur?'var(--amber-bg)':done?'var(--green-bg)':''}'" >
-              <div class="tl-dot \${dotC}">\${done?'✓':cur?'●':'○'}</div>
-              <div class="tl-info" style="flex:1">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <strong style="font-size:13px">\${e}</strong>
-                  <span style="font-size:11px;color:\${done?'var(--green)':cur?'var(--amber)':'var(--text3)'}">\${done?'✓':cur?'● Em andamento':''}</span>
-                </div>
-                \${cur?'<div style="margin-top:6px"><button class="btn btn-sm btn-primary" style="font-size:11px" onclick="event.stopPropagation();avancarEtapa(\''+id+'\')">Avançar →</button></div>':''}
-              </div>
-            </div>\`;
-          }).join('')}
-        </div>`}
+      <button class="btn btn-sm" onclick="document.getElementById('timeline-wrap').innerHTML='';renderBombeiros()">Fechar</button>
     </div>`;
-  document.getElementById('timeline-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+
+  if(isAVCB){
+    if(ambosOk) html+=`<div style="padding:10px 12px;background:var(--green-bg);border:0.5px solid #a8d5a8;border-radius:var(--r);font-size:13px;color:var(--green);margin-bottom:14px;font-weight:600">✅ Projeto e Vistoria aprovados — AVCB pode ser emitido!</div>`;
+    html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px;padding-bottom:6px;border-bottom:0.5px solid var(--border)">📐 Projeto</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Status: <strong>${p.status_projeto||'Não iniciado'}</strong></div>
+        <div class="timeline">${tlItens(ETAPAS_PROJETO, p.etapa_projeto, 'etapa_projeto', id)}</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px;padding-bottom:6px;border-bottom:0.5px solid var(--border)">🔍 Vistoria</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Status: <strong>${p.status_vistoria||'Não iniciada'}</strong></div>
+        <div class="timeline">${tlItens(ETAPAS_VISTORIA, p.etapa_vistoria, 'etapa_vistoria', id)}</div>
+      </div>
+    </div>`;
+  } else {
+    const etapaAtual=p.etapa&&ETAPAS_CB.includes(p.etapa)?p.etapa:null;
+    const idx=etapaAtual?ETAPAS_CB.indexOf(etapaAtual):-1;
+    html+=`<div style="font-size:12px;color:var(--text3);margin-bottom:12px;padding:8px 12px;background:var(--surface2);border-radius:var(--r)">
+      Clique em qualquer etapa para marcá-la como atual.
+      ${etapaAtual?`Etapa: <strong style="color:var(--amber)">${etapaAtual}</strong>`:'<span style="color:var(--red)">Nenhuma etapa definida</span>'}
+    </div>
+    <div class="timeline">`;
+    ETAPAS_CB.forEach((e,i)=>{
+      const done=i<idx,cur=i===idx;
+      const dotC=done?'done':cur?'current':'wait';
+      const bg=cur?'background:var(--amber-bg);':done?'background:var(--green-bg);':'';
+      const lbl=done?'<span style="color:var(--green);font-size:11px">✓ Concluída</span>':
+                cur?'<span style="color:var(--amber);font-size:11px;font-weight:600">● Em andamento</span>':
+                '<span style="color:var(--text3);font-size:11px">Aguardando</span>';
+      const btn=cur?`<div style="margin-top:6px"><button class="btn btn-sm btn-primary" style="font-size:11px"
+        onclick="event.stopPropagation();avancarEtapa('${id}')">Avançar para próxima →</button></div>`:'';
+      html+=`<div class="tl-item" style="cursor:pointer;border-radius:var(--r);padding:10px 8px;${bg}"
+        onclick="marcarEtapaCB('${id}','${e.replace(/'/g,"\\'")}')">
+        <div class="tl-dot ${dotC}">${done?'✓':cur?'●':'○'}</div>
+        <div class="tl-info" style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <strong style="font-size:13px">${e}</strong>${lbl}
+          </div>${btn}
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  }
+
+  html+='</div>';
+  wrap.innerHTML = html;
+  wrap.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 let _tlProcessoId=null;
 
 async function marcarEtapaCBSub(id, campo, etapa){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{data:p}=await SB.from('processos_cb').select(campo).eq('id',id).single();
-  const novo=p?.[campo]===etapa?null:etapa;
+  const{data:p}=await SB.from('processos_cb').select('etapa_projeto,etapa_vistoria').eq('id',id).single();
+  const curVal = p?.[campo];
+  const novo = curVal===etapa ? null : etapa;
   const upd={[campo]:novo};
-  // Se ambas aprovadas, atualiza status geral
-  if(campo==='etapa_projeto'||campo==='etapa_vistoria'){
-    const{data:full}=await SB.from('processos_cb').select('etapa_projeto,etapa_vistoria,status_projeto,status_vistoria').eq('id',id).single();
-    const ep=campo==='etapa_projeto'?novo:full?.etapa_projeto;
-    const ev=campo==='etapa_vistoria'?novo:full?.etapa_vistoria;
-    const ULTIMA_PROJETO='Aprovação do projeto';
-    const ULTIMA_VISTORIA='AVCB emitido';
-    if(ep===ULTIMA_PROJETO) upd.status_projeto='Aprovado';
-    if(ev===ULTIMA_VISTORIA){upd.status_vistoria='Aprovado';}
-    if(ep===ULTIMA_PROJETO&&ev===ULTIMA_VISTORIA) upd.status='Aprovado';
-  }
+  const ULTIMA_PROJETO='Aprovação do projeto';
+  const ULTIMA_VISTORIA='AVCB emitido';
+  const ep = campo==='etapa_projeto' ? novo : p?.etapa_projeto;
+  const ev = campo==='etapa_vistoria' ? novo : p?.etapa_vistoria;
+  if(ep===ULTIMA_PROJETO) upd.status_projeto='Aprovado';
+  else if(campo==='etapa_projeto') upd.status_projeto='Em análise';
+  if(ev===ULTIMA_VISTORIA) upd.status_vistoria='Aprovado';
+  else if(campo==='etapa_vistoria') upd.status_vistoria='Em análise';
+  if(ep===ULTIMA_PROJETO && ev===ULTIMA_VISTORIA) upd.status='Aprovado';
   await SB.from('processos_cb').update(upd).eq('id',id);
-  log('Bombeiros',`Sub-etapa atualizada: ${campo} → ${novo||'desmarcada'}`,novo||'Pendente');
+  log('Bombeiros',`Sub-etapa: ${campo} → ${novo||'desmarcada'}`, novo||'Pendente');
   renderBombeiros();
   verTimeline(id);
 }
@@ -3460,12 +3469,15 @@ async function avancarEtapaSub(id, campo){
   if(!podeEditar()){alert('Sem permissão.');return;}
   const ETAPAS_PROJETO=['Levantamento e projeto','Pagamento de taxas','Protocolo no CB','Análise técnica','Aprovação do projeto'];
   const ETAPAS_VISTORIA=['Agendamento de vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
-  const etapas=campo==='etapa_projeto'?ETAPAS_PROJETO:ETAPAS_VISTORIA;
+  const etapas = campo==='etapa_projeto' ? ETAPAS_PROJETO : ETAPAS_VISTORIA;
   const{data:p}=await SB.from('processos_cb').select(campo).eq('id',id).single();
-  const idx=etapas.indexOf(p?.[campo]??'');
+  const cur = p?.[campo];
+  const idx = cur ? etapas.indexOf(cur) : -1;
   if(idx>=etapas.length-1){alert('Última etapa desta fase.');return;}
-  await marcarEtapaCBSub(id,campo,etapas[idx+1]);
+  await marcarEtapaCBSub(id, campo, etapas[idx+1]);
 }
+
+
 
 }
 
