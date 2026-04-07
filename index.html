@@ -3029,6 +3029,7 @@ function cbGrupoChange(){
   const grupo=document.getElementById('b-grupo').value;
   const selTipo=document.getElementById('b-tipo');
   const blocoAVCB=document.getElementById('b-bloco-avcb');
+  const statusWrap=document.getElementById('b-status-wrap');
   if(grupo==='CLEP'){
     selTipo.innerHTML='<option value="CLEP">CLEP</option>';
     selTipo.disabled=true;
@@ -3036,6 +3037,8 @@ function cbGrupoChange(){
     selTipo.innerHTML='<option value="1ª Aprovação">1ª Aprovação</option><option value="Renovação">Renovação</option>';
     selTipo.disabled=false;
   }
+  // Para AVCB: oculta status geral (calculado automaticamente pelas sub-etapas)
+  if(statusWrap) statusWrap.style.display = grupo==='AVCB' ? 'none' : 'block';
   blocoAVCB.style.display=grupo==='AVCB'?'block':'none';
   if(grupo==='AVCB') cbAvcbStatusAuto();
 }
@@ -3045,15 +3048,28 @@ function cbAvcbStatusAuto(){
   const sv=document.getElementById('b-status-vistoria')?.value||'';
   const el=document.getElementById('b-avcb-status-auto');
   if(!el) return;
-  const ambosAprovados=sp==='Aprovado'&&sv==='Aprovado';
+
+  // Calcula status geral automaticamente
+  let statusAuto='Em análise';
+  if(sp==='Aprovado' && sv==='Aprovado'){
+    statusAuto='Aprovado';
+  } else if(sp==='Reprovado' || sv==='Reprovado'){
+    statusAuto='Reprovado';
+  } else if(sp==='Pendente' || sv==='Pendente'){
+    statusAuto='Pendente';
+  }
+  // Atualiza hidden status
+  document.getElementById('b-status').value=statusAuto;
+
+  const ambosAprovados=statusAuto==='Aprovado';
   const algumReprovado=sp==='Reprovado'||sv==='Reprovado';
+
   if(ambosAprovados){
     el.style.display='block';
     el.style.background='var(--green-bg)';
     el.style.border='0.5px solid #a8d5a8';
     el.style.color='var(--green)';
-    el.innerHTML='✅ <strong>Projeto e Vistoria aprovados</strong> — AVCB pode ser emitido! O status geral será atualizado para "Aprovado".';
-    document.getElementById('b-status').value='Aprovado';
+    el.innerHTML='✅ <strong>Projeto e Vistoria aprovados</strong> — AVCB pode ser emitido!';
   } else if(algumReprovado){
     el.style.display='block';
     el.style.background='#fdecea';
@@ -3138,13 +3154,20 @@ async function salvarProcesso(){
   const{data:cli}=await SB.from('clientes').select('nome,documento').eq('id',cid).single();
   const grupo   = document.getElementById('b-grupo').value;
   const tipo    = document.getElementById('b-tipo').value;
-  const status  = document.getElementById('b-status').value;
   const protocolo=document.getElementById('b-protocolo').value.trim();
-  // Para AVCB, verifica se ambas sub-etapas estão aprovadas
-  let statusFinal=status;
   const spVal=document.getElementById('b-status-projeto')?.value||'';
   const svVal=document.getElementById('b-status-vistoria')?.value||'';
-  if(grupo==='AVCB'&&spVal==='Aprovado'&&svVal==='Aprovado') statusFinal='Aprovado';
+
+  // Para AVCB: status geral sempre derivado das sub-etapas, nunca manual
+  let statusFinal;
+  if(grupo==='AVCB'){
+    if(spVal==='Aprovado'&&svVal==='Aprovado')       statusFinal='Aprovado';
+    else if(spVal==='Reprovado'||svVal==='Reprovado') statusFinal='Reprovado';
+    else if(spVal==='Pendente'||svVal==='Pendente')   statusFinal='Pendente';
+    else                                               statusFinal='Em análise';
+  } else {
+    statusFinal=document.getElementById('b-status').value;
+  }
   const payload={
     cliente_id:   cid,
     cliente_nome: cli?.nome||'',
@@ -3446,7 +3469,7 @@ let _tlProcessoId=null;
 
 async function marcarEtapaCBSub(id, campo, etapa){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{data:p}=await SB.from('processos_cb').select('etapa_projeto,etapa_vistoria').eq('id',id).single();
+  const{data:p}=await SB.from('processos_cb').select('etapa_projeto,etapa_vistoria,status_projeto,status_vistoria').eq('id',id).single();
   const curVal = p?.[campo];
   const novo = curVal===etapa ? null : etapa;
   const upd={[campo]:novo};
@@ -3455,10 +3478,18 @@ async function marcarEtapaCBSub(id, campo, etapa){
   const ep = campo==='etapa_projeto' ? novo : p?.etapa_projeto;
   const ev = campo==='etapa_vistoria' ? novo : p?.etapa_vistoria;
   if(ep===ULTIMA_PROJETO) upd.status_projeto='Aprovado';
-  else if(campo==='etapa_projeto') upd.status_projeto='Em análise';
+  else if(campo==='etapa_projeto' && novo) upd.status_projeto='Em análise';
+  else if(campo==='etapa_projeto' && !novo) upd.status_projeto='';
   if(ev===ULTIMA_VISTORIA) upd.status_vistoria='Aprovado';
-  else if(campo==='etapa_vistoria') upd.status_vistoria='Em análise';
-  if(ep===ULTIMA_PROJETO && ev===ULTIMA_VISTORIA) upd.status='Aprovado';
+  else if(campo==='etapa_vistoria' && novo) upd.status_vistoria='Em análise';
+  else if(campo==='etapa_vistoria' && !novo) upd.status_vistoria='';
+  // Recalcula status geral sempre a partir das sub-etapas
+  const spFinal = upd.status_projeto!==undefined ? upd.status_projeto : p?.status_projeto||'';
+  const svFinal = upd.status_vistoria!==undefined ? upd.status_vistoria : p?.status_vistoria||'';
+  if(spFinal==='Aprovado'&&svFinal==='Aprovado')       upd.status='Aprovado';
+  else if(spFinal==='Reprovado'||svFinal==='Reprovado') upd.status='Reprovado';
+  else if(spFinal==='Pendente'||svFinal==='Pendente')   upd.status='Pendente';
+  else                                                   upd.status='Em análise';
   await SB.from('processos_cb').update(upd).eq('id',id);
   log('Bombeiros',`Sub-etapa: ${campo} → ${novo||'desmarcada'}`, novo||'Pendente');
   renderBombeiros();
