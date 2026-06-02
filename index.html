@@ -1849,8 +1849,21 @@ tr:hover td{background:var(--surface2)}
 
 <script>
 const { createClient } = supabase;
-const SB = createClient('https://brkobtnpmikhucarewct.supabase.co','sb_publishable_-e1i7D5KpbB7TJ0PHC8uTA_PuYTrpJl',{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+
+const _memStore = {};
+const _ssStore = {};
+const safeSS = {
+  getItem: (key) => { try { return sessionStorage.getItem(key); } catch(e) { return _ssStore[key] ?? null; } },
+  setItem: (key, val) => { try { sessionStorage.setItem(key, val); } catch(e) { _ssStore[key] = val; } },
+  removeItem: (key) => { try { sessionStorage.removeItem(key); } catch(e) { delete _ssStore[key]; } },
+};
+const safeStorage = {
+  getItem: (key) => { try { return localStorage.getItem(key); } catch(e) { return _memStore[key] ?? null; } },
+  setItem: (key, val) => { try { localStorage.setItem(key, val); } catch(e) { _memStore[key] = val; } },
+  removeItem: (key) => { try { localStorage.removeItem(key); } catch(e) { delete _memStore[key]; } },
+};
+const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl',{
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:safeStorage}
 });
 
 // ── MULTI-TENANT: empresa_id automático ───────────────────────
@@ -1915,7 +1928,7 @@ function badge(s){
 // ── AUTENTICAÇÃO ──────────────────────────────────────────────
 // Verifica sessão salva ao carregar
 (async()=>{
-  const sessao=sessionStorage.getItem('gestao_sessao');
+  const sessao=safeSS.getItem('gestao_sessao');
   if(sessao){
     try{
       const s=JSON.parse(sessao);
@@ -1923,7 +1936,7 @@ function badge(s){
       if(s.empresa_id) EMP_ID=s.empresa_id;
       const{data:u}=await SB.from('perfis').select('*').eq('id',s.id).eq('ativo',true).single();
       if(u){ EMP_ID=u.empresa_id; await _iniciarApp(u); return; }
-    }catch(e){ sessionStorage.removeItem('gestao_sessao'); }
+    }catch(e){ safeSS.removeItem('gestao_sessao'); }
   }
   // Mostra login
   document.getElementById('login-wrap').style.display='flex';
@@ -1946,7 +1959,7 @@ async function entrar(){
     const senhaHash=await _hashSenha(senha);
     if(senhaHash!==u.senha_hash){ errEl.textContent='Senha incorreta.'; return; }
     // Login bem-sucedido — salva id e empresa_id na sessão
-    sessionStorage.setItem('gestao_sessao',JSON.stringify({id:u.id, empresa_id:u.empresa_id}));
+    safeSS.setItem('gestao_sessao',JSON.stringify({id:u.id, empresa_id:u.empresa_id}));
     await _iniciarApp(u);
   }finally{
     btn.disabled=false; btn.textContent='Entrar';
@@ -2021,7 +2034,7 @@ async function _iniciarApp(u){
 }
 
 function sair(){
-  sessionStorage.removeItem('gestao_sessao');
+  safeSS.removeItem('gestao_sessao');
   location.reload();
 }
 
@@ -7624,3 +7637,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+                                                                                                      
