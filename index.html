@@ -222,7 +222,7 @@ tr:hover td{background:var(--surface2)}
   <div class="login-card">
     <div class="login-logo">
       <div class="login-logo-icon">G</div>
-      <div><h1>GestãoPRO</h1><p>JPM Engenharia de Incêndio</p></div>
+      <div><h1>GestãoPRO</h1><p>Firestop Engenharia</p></div>
     </div>
     <div class="login-title">Entrar</div>
     <div class="login-error" id="login-error"></div>
@@ -276,7 +276,6 @@ tr:hover td{background:var(--surface2)}
       <div class="nav-section" id="nav-admin-section" style="display:none">administração</div>
       <div class="nav-item" id="nav-usuarios" style="display:none" onclick="showPage('usuarios',this)"><span class="nav-icon">◧</span> Usuários</div>
       <div class="nav-item" id="nav-config" style="display:none" onclick="showPage('config',this)"><span class="nav-icon">⚙</span> Configurações</div>
-      <div class="nav-item" onclick="showPage('assistente',this)"><span class="nav-icon">✦</span> Assistente IA</div>
     </div>
 
     <div class="main">
@@ -845,112 +844,10 @@ tr:hover td{background:var(--surface2)}
       </div>
 
     </div>
-
-      <!-- ASSISTENTE IA -->
-      <div class="page" id="page-assistente">
-        <div class="page-title">Assistente IA</div>
-        <div class="page-sub">Especialista em segurança contra incêndio — normas CBMRN, ABNT e cálculos hidráulicos</div>
-
-        <div style="display:flex;gap:16px;height:calc(100vh - 180px);min-height:500px">
-
-          <!-- Histórico de conversas -->
-          <div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;gap:8px">
-            <button onclick="iaNovaCONVERSA()" class="btn btn-primary btn-sm" style="width:100%;justify-content:center">+ Nova conversa</button>
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);padding:4px 0">Histórico</div>
-            <div id="ia-historico-lista" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
-          </div>
-
-          <!-- Chat principal -->
-          <div class="card" style="flex:1;display:flex;flex-direction:column;padding:0;overflow:hidden">
-            <!-- Header do chat -->
-            <div style="padding:14px 18px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px">
-              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">✦</div>
-              <div>
-                <div style="font-size:13px;font-weight:600" id="ia-conv-titulo">Nova conversa</div>
-                <div style="font-size:11px;color:var(--text3)">Especialista CBMRN · Normas ABNT · Cálculos hidráulicos</div>
-              </div>
-              <div id="ia-status-dot" style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:var(--green)"></div>
-            </div>
-
-            <!-- Mensagens -->
-            <div id="ia-msgs-full" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px">
-              <div id="ia-boas-vindas" style="text-align:center;padding:40px 20px">
-                <div style="font-size:40px;margin-bottom:12px">🔥</div>
-                <div style="font-size:16px;font-weight:600;margin-bottom:8px">Assistente de Engenharia de Incêndio</div>
-                <div style="font-size:13px;color:var(--text2);max-width:400px;margin:0 auto;line-height:1.6">
-                  Especializado nas normas do CBMRN, ABNT e cálculos hidráulicos. Pergunte sobre ITs, dimensionamento de sistemas, classificação de edificações e muito mais.
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px">
-                  ${['Qual IT rege sistemas de hidrantes?','Como classificar uma edificação residencial?','Calcular pressão residual num hidrante','Quando é exigido chuveiro automático?','Brigada de incêndio: quantos membros?','Saídas de emergência: largura mínima?'].map(s=>`<button onclick="iaEnviarSugestao('${s}')" style="padding:6px 12px;border:0.5px solid var(--border2);border-radius:20px;font-size:12px;background:var(--surface2);cursor:pointer;color:var(--text)">${s}</button>`).join('')}
-                </div>
-              </div>
-            </div>
-
-            <!-- Input -->
-            <div style="padding:14px 16px;border-top:0.5px solid var(--border)">
-              <div style="display:flex;gap:8px;align-items:flex-end">
-                <textarea id="ia-input-full" placeholder="Faça sua pergunta sobre normas, cálculos ou procedimentos..."
-                  style="flex:1;padding:10px 14px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:inherit;resize:none;height:44px;max-height:120px;background:var(--surface);color:var(--text);line-height:1.5"
-                  oninput="this.style.height='44px';this.style.height=Math.min(this.scrollHeight,120)+'px'"
-                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();iaEnviar('full')}"></textarea>
-                <button onclick="iaEnviar('full')" id="ia-btn-full"
-                  style="width:44px;height:44px;border-radius:var(--r);background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">
-                  ➤
-                </button>
-              </div>
-              <div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">
-                Baseado nas ITs do CBMRN 2022/2025 · Resoluções Técnicas · NBR ABNT · Shift+Enter para nova linha
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-<!-- CHAT FLUTUANTE IA -->
-<div id="ia-fab" onclick="iaToggleFloat()"
-  style="position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 4px 20px rgba(99,102,241,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;z-index:9998;transition:transform .2s;border:none"
-  title="Assistente IA"
-  onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-  ✦
-  <span id="ia-fab-badge" style="display:none;position:absolute;top:-2px;right:-2px;width:16px;height:16px;background:var(--red);border-radius:50%;font-size:9px;color:#fff;align-items:center;justify-content:center;font-weight:700">!</span>
+  </div>
 </div>
 
-<div id="ia-float-panel" style="display:none;position:fixed;bottom:88px;right:24px;width:360px;height:480px;background:var(--surface);border:0.5px solid var(--border);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.15);z-index:9997;flex-direction:column;overflow:hidden">
-  <!-- Header float -->
-  <div style="padding:12px 16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;gap:10px">
-    <div style="font-size:18px">✦</div>
-    <div style="flex:1">
-      <div style="font-size:13px;font-weight:700;color:#fff">Assistente IA</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.75)">CBMRN · ABNT · Hidráulica</div>
-    </div>
-    <button onclick="iaToggleFloat()" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:4px 8px;color:#fff;cursor:pointer;font-size:12px">✕</button>
-    <button onclick="showPage('assistente',document.querySelector('[onclick*=assistente]'));iaToggleFloat()" style="background:rgba(255,255,255,.2);border:none;border-radius:6px;padding:4px 8px;color:#fff;cursor:pointer;font-size:10px">↗ Expandir</button>
-  </div>
-  <!-- Msgs float -->
-  <div id="ia-msgs-float" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px">
-    <div style="text-align:center;padding:20px 10px;color:var(--text3);font-size:12px">
-      <div style="font-size:28px;margin-bottom:8px">🔥</div>
-      Olá! Sou especialista em normas de segurança contra incêndio do CBMRN. Como posso ajudar?
-    </div>
-  </div>
-  <!-- Input float -->
-  <div style="padding:10px 12px;border-top:0.5px solid var(--border)">
-    <div style="display:flex;gap:6px">
-      <input id="ia-input-float" placeholder="Pergunte sobre normas, cálculos..."
-        style="flex:1;padding:8px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:inherit;background:var(--surface);color:var(--text)"
-        onkeydown="if(event.key==='Enter')iaEnviar('float')">
-      <button onclick="iaEnviar('float')" id="ia-btn-float"
-        style="width:36px;height:36px;border-radius:var(--r);background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;cursor:pointer;color:#fff;font-size:14px;flex-shrink:0">
-        ➤
-      </button>
-    </div>
-  </div>
-
-    </div><!-- /.main -->
-  </div><!-- /.body-wrap -->
-</div><!-- /#app -->
-
-<!-- MODAIS ══ -->
+<!-- ══ MODAIS ══ -->
 
 <!-- CLIENTE -->
 <div class="overlay" id="modal-cliente">
@@ -1849,55 +1746,9 @@ tr:hover td{background:var(--surface2)}
 
 <script>
 const { createClient } = supabase;
-
-const _memStore = {};
-const _ssStore = {};
-const safeSS = {
-  getItem: (key) => { try { return sessionStorage.getItem(key); } catch(e) { return _ssStore[key] ?? null; } },
-  setItem: (key, val) => { try { sessionStorage.setItem(key, val); } catch(e) { _ssStore[key] = val; } },
-  removeItem: (key) => { try { sessionStorage.removeItem(key); } catch(e) { delete _ssStore[key]; } },
-};
-const safeStorage = {
-  getItem: (key) => { try { return localStorage.getItem(key); } catch(e) { return _memStore[key] ?? null; } },
-  setItem: (key, val) => { try { localStorage.setItem(key, val); } catch(e) { _memStore[key] = val; } },
-  removeItem: (key) => { try { localStorage.removeItem(key); } catch(e) { delete _memStore[key]; } },
-};
 const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl',{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:safeStorage}
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
 });
-
-// ── MULTI-TENANT: empresa_id automático ───────────────────────
-let EMP_ID = null; // definido no login
-
-// Tabelas que NÃO têm empresa_id
-const TABELAS_GLOBAIS = new Set(['empresas']);
-
-// Q() — wrapper simples que retorna o builder do Supabase
-// Para SELECT: use SB.from('tabela').select(...).eq('empresa_id',EMP_ID) — adicione .eq('empresa_id',EMP_ID) manual
-// SOLUÇÃO MAIS ROBUSTA: funções helper por operação
-function Qsel(tabela, cols='*'){
-  if(TABELAS_GLOBAIS.has(tabela)) return SB.from(tabela).select(cols);
-  return SB.from(tabela).select(cols).eq('empresa_id', EMP_ID);
-}
-function Qins(tabela, data){
-  if(TABELAS_GLOBAIS.has(tabela)) return SB.from(tabela).insert(data);
-  const payload = Array.isArray(data)
-    ? data.map(d=>({...d, empresa_id:EMP_ID}))
-    : {...data, empresa_id:EMP_ID};
-  return SB.from(tabela).insert(payload);
-}
-function Qupd(tabela, data){
-  if(TABELAS_GLOBAIS.has(tabela)) return SB.from(tabela).update(data);
-  return SB.from(tabela).update(data).eq('empresa_id', EMP_ID);
-}
-function Qdel(tabela){
-  if(TABELAS_GLOBAIS.has(tabela)) return SB.from(tabela).delete();
-  return SB.from(tabela).delete().eq('empresa_id', EMP_ID);
-}
-// Q() genérico — retorna builder raw com empresa_id injetável
-function Q(tabela){
-  return SB.from(tabela);
-}
 
 let USER={id:null}, PERFIL={nivel:null,nome:''}, VENDA_ATIVA=null, ORC_ATIVO=null;
 
@@ -1928,15 +1779,14 @@ function badge(s){
 // ── AUTENTICAÇÃO ──────────────────────────────────────────────
 // Verifica sessão salva ao carregar
 (async()=>{
-  const sessao=safeSS.getItem('gestao_sessao');
+  const sessao=sessionStorage.getItem('gestao_sessao');
   if(sessao){
     try{
       const s=JSON.parse(sessao);
-      // Restaura EMP_ID antes da query para Q() funcionar
-      if(s.empresa_id) EMP_ID=s.empresa_id;
+      // Valida que o usuário ainda existe e está ativo
       const{data:u}=await SB.from('perfis').select('*').eq('id',s.id).eq('ativo',true).single();
-      if(u){ EMP_ID=u.empresa_id; await _iniciarApp(u); return; }
-    }catch(e){ safeSS.removeItem('gestao_sessao'); }
+      if(u){ await _iniciarApp(u); return; }
+    }catch(e){ sessionStorage.removeItem('gestao_sessao'); }
   }
   // Mostra login
   document.getElementById('login-wrap').style.display='flex';
@@ -1951,15 +1801,15 @@ async function entrar(){
   if(!usuario||!senha){ errEl.textContent='Preencha usuário e senha.'; return; }
   btn.disabled=true; btn.textContent='Entrando...';
   try{
-    // Busca usuário globalmente pelo username (cross-company)
-    const{data:u,error}=await SB.from('perfis').select('*').eq('usuario',usuario).eq('ativo',true).single();
+    // Busca usuário pelo username
+    const{data:u,error}=await SB.from('perfis')
+      .select('*').eq('usuario',usuario).eq('ativo',true).single();
     if(error||!u){ errEl.textContent='Usuário não encontrado ou inativo.'; return; }
-    if(!u.empresa_id){ errEl.textContent='Usuário sem empresa vinculada. Contate o suporte.'; return; }
     // Verifica senha com hash
     const senhaHash=await _hashSenha(senha);
     if(senhaHash!==u.senha_hash){ errEl.textContent='Senha incorreta.'; return; }
-    // Login bem-sucedido — salva id e empresa_id na sessão
-    safeSS.setItem('gestao_sessao',JSON.stringify({id:u.id, empresa_id:u.empresa_id}));
+    // Login bem-sucedido
+    sessionStorage.setItem('gestao_sessao',JSON.stringify({id:u.id}));
     await _iniciarApp(u);
   }finally{
     btn.disabled=false; btn.textContent='Entrar';
@@ -1982,7 +1832,6 @@ try{
 async function _iniciarApp(u){
   USER={id:u.id};
   PERFIL={nivel:u.nivel, nome:u.nome};
-  EMP_ID = u.empresa_id; // ← define o contexto multi-tenant
   document.getElementById('login-wrap').style.display='none';
   document.getElementById('app').classList.add('visible');
 
@@ -2026,15 +1875,14 @@ async function _iniciarApp(u){
   document.getElementById('data-hoje').textContent=`${dias[n.getDay()]}, ${n.getDate()} de ${meses[n.getMonth()]} de ${n.getFullYear()}`;
 
   renderDashboard();
-  iaInit();
-  carregarConfigEmpresa();
+  carregarConfigEmpresa(); // carrega dados da empresa do banco
   setTimeout(carregarNotificacoes,1500);
   setTimeout(()=>{ calCarregarTarefas().then(calIniciarLembretes); },2000);
   setTimeout(gcalIniciar,3000);
 }
 
 function sair(){
-  safeSS.removeItem('gestao_sessao');
+  sessionStorage.removeItem('gestao_sessao');
   location.reload();
 }
 
@@ -2062,9 +1910,7 @@ function showPage(id,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(el)el.classList.add('active');
-  const fn={dashboard:renderDashboard,clientes:renderClientes,vendas:renderVendas,financeiro:renderFinanceiro,funcionarios:renderFuncionarios,bombeiros:renderBombeiros,usuarios:renderUsuarios,orcamentos:renderOrcamentos,gantt:renderGanttPage,calendario:renderCalendario,config:renderConfig,
-    assistente:()=>{iaCarregarHistorico();iaRenderHistorico();if(!_iaConvAtiva&&_iaConvs.length){iaAbrirConversa(_iaConvs[0].id);}else if(!_iaConvAtiva){iaNovaCONVERSA();}}
-  };
+  const fn={dashboard:renderDashboard,clientes:renderClientes,vendas:renderVendas,financeiro:renderFinanceiro,funcionarios:renderFuncionarios,bombeiros:renderBombeiros,usuarios:renderUsuarios,orcamentos:renderOrcamentos,gantt:renderGanttPage,calendario:renderCalendario,config:renderConfig};
   if(fn[id])fn[id]();
 }
 
@@ -2131,7 +1977,7 @@ const _CLI_TTL = 5 * 60 * 1000; // 5 minutos
 async function cliCarregar(){
   const agora = Date.now();
   if(_cliLista.length && (agora - _cliCacheTs) < _CLI_TTL) return; // cache válido
-  const{data}=await SB.from('clientes').select('id,nome,documento,cidade').eq('empresa_id',EMP_ID).order('nome');
+  const{data}=await SB.from('clientes').select('id,nome,documento,cidade').order('nome');
   _cliLista=data||[];
   _cliCacheTs=agora;
 }
@@ -2220,7 +2066,7 @@ function cliResetar(ctx){
 
 async function popularSelects(){
   await cliCarregar(); // garante cache carregado
-  const{data:fn}=await SB.from('funcionarios').select('id,nome').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('status','Ativo').order('nome');
+  const{data:fn}=await SB.from('funcionarios').select('id,nome').eq('status','Ativo').order('nome');
   const vr=document.getElementById('v-resp');
   if(vr){
     vr.innerHTML='<option value="">Selecione...</option>';
@@ -2230,7 +2076,7 @@ async function popularSelects(){
 
 async function log(tipo,desc,status){
   // Não bloqueia — falha silenciosa se não houver autenticação
-  SB.from('atividades').insert({empresa_id:EMP_ID,tipo,descricao:desc,status,usuario_nome:'JPM'}).then(()=>{}).catch(()=>{});
+  SB.from('atividades').insert({tipo,descricao:desc,status,usuario_nome:'Firestop'}).then(()=>{}).catch(()=>{});
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────
@@ -2253,12 +2099,12 @@ async function renderDashboard(){
     {data:orcs},
     {data:itensAll},
   ]=await Promise.all([
-    SB.from('lancamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID),
-    SB.from('clientes').select('status').eq('empresa_id',EMP_ID),
-    SB.from('processos_cb').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID),
-    SB.from('parcelas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('data_vencimento'),
-    SB.from('orcamentos').select('id,numero,titulo,cliente_nome,valor_total,status').eq('empresa_id',EMP_ID).order('numero',{ascending:false}),
-    SB.from('itens_orcamento').select('orcamento_id,progresso,status_execucao,data_fim_prevista').eq('empresa_id',EMP_ID),
+    SB.from('lancamentos').select('*'),
+    SB.from('clientes').select('status'),
+    SB.from('processos_cb').select('*'),
+    SB.from('parcelas').select('*').order('data_vencimento'),
+    SB.from('orcamentos').select('id,numero,titulo,cliente_nome,valor_total,status').order('numero',{ascending:false}),
+    SB.from('itens_orcamento').select('orcamento_id,progresso,status_execucao,data_fim_prevista'),
   ]);
 
   // ── FINANCEIRO DO MÊS ─────────────────────────────────────
@@ -2423,7 +2269,7 @@ async function renderDashboard(){
 // ── CLIENTES ────────────────────────────────────────────────
 let _clientes=[];
 async function renderClientes(){
-  const{data}=await SB.from('clientes').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('nome');
+  const{data}=await SB.from('clientes').select('*').order('nome');
   _clientes=data||[];renderTabelaClientes(_clientes);
 }
 function buscarClientes(q){
@@ -2553,8 +2399,8 @@ async function salvarCliente(){
 // ── VENDAS ────────────────────────────────────────────────────
 async function renderVendas(){
   const[{data:vendas},{data:parcelas}]=await Promise.all([
-    SB.from('vendas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('criado_em',{ascending:false}),
-    SB.from('parcelas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID),
+    SB.from('vendas').select('*').order('criado_em',{ascending:false}),
+    SB.from('parcelas').select('*'),
   ]);
   const v=vendas||[];const p=parcelas||[];
   document.getElementById('v-abertas').textContent=v.filter(x=>['Iniciado','Proposta','Negociação'].includes(x.etapa)).length;
@@ -2586,7 +2432,7 @@ async function renderVendas(){
 
 async function abrirDetalheVenda(id){
   VENDA_ATIVA=id;
-  const{data:v}=await SB.from('vendas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:v}=await SB.from('vendas').select('*').eq('id',id).single();
   await popularSelects();
   document.getElementById('modal-venda-titulo').textContent='Editar venda';
   // Preenche busca de cliente
@@ -2615,10 +2461,10 @@ async function salvarVenda(){
   const cid=document.getElementById('v-cliente').value;
   const servico=document.getElementById('v-servico').value.trim();
   if(!cid||!servico){alert('Preencha cliente e serviço.');return;}
-  const{data:cli}=await SB.from('clientes').select('nome').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',cid).single();
+  const{data:cli}=await SB.from('clientes').select('nome').eq('id',cid).single();
   const rid=document.getElementById('v-resp').value;
   let respNome='';
-  if(rid){const{data:rf}=await SB.from('funcionarios').select('nome').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',rid).single();respNome=rf?.nome||'';}
+  if(rid){const{data:rf}=await SB.from('funcionarios').select('nome').eq('id',rid).single();respNome=rf?.nome||'';}
   const etapa=document.getElementById('v-etapa').value;
   const valor=document.getElementById('v-valor').value||0;
 
@@ -2627,7 +2473,7 @@ async function salvarVenda(){
     await SB.from('vendas').update({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).eq('id',VENDA_ATIVA);
     await log('Venda',`Venda atualizada — ${cli?.nome}: ${servico}`,etapa);
   } else {
-    const{data:nova,error}=await SB.from('vendas').insert({empresa_id:EMP_ID,cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).select().single();
+    const{data:nova,error}=await SB.from('vendas').insert({cliente_id:cid,cliente_nome:cli?.nome||'',servico,valor,responsavel_nome:respNome,etapa,data_proposta:document.getElementById('v-data').value||hoje(),observacoes:document.getElementById('v-obs').value}).select().single();
     if(error){alert('Erro: '+error.message);return;}
     VENDA_ATIVA=nova.id;
     document.getElementById('modal-venda-titulo').textContent='Detalhes da venda';
@@ -2644,7 +2490,7 @@ async function salvarVenda(){
 
 // ── ANEXOS ───────────────────────────────────────────────────
 async function carregarAnexos(vendaId){
-  const{data}=await SB.from('anexos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('venda_id',vendaId).order('criado_em');
+  const{data}=await SB.from('anexos').select('*').eq('venda_id',vendaId).order('criado_em');
   const el=document.getElementById('lista-anexos');
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);text-align:center;padding:12px 0">Nenhum arquivo anexado ainda.</div>';return;}
   el.innerHTML=data.map(a=>`<div class="file-item">
@@ -2664,7 +2510,7 @@ async function uploadProposta(input){
   const path=`${VENDA_ATIVA}/${Date.now()}_${file.name.replace(/\s/g,'_')}`;
   const{error:upErr}=await SB.storage.from('propostas').upload(path,file);
   if(upErr){alert('Erro no upload: '+upErr.message+'\n\nCertifique-se de criar o bucket "propostas" no Supabase Storage.');return;}
-  await SB.from('anexos').insert({empresa_id:EMP_ID,venda_id:VENDA_ATIVA,nome:file.name,tamanho:file.size,tipo_mime:file.type,storage_path:path});
+  await SB.from('anexos').insert({venda_id:VENDA_ATIVA,nome:file.name,tamanho:file.size,tipo_mime:file.type,storage_path:path});
   await log('Venda',`Proposta anexada: ${file.name}`,'Concluído');
   input.value='';
   carregarAnexos(VENDA_ATIVA);
@@ -2678,7 +2524,7 @@ async function baixarAnexo(path,nome){
 async function excluirAnexo(id,path){
   if(!confirm('Excluir este arquivo?'))return;
   await SB.storage.from('propostas').remove([path]);
-  await SB.from('anexos').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  await SB.from('anexos').delete().eq('id',id);
   carregarAnexos(VENDA_ATIVA);
 }
 
@@ -2711,8 +2557,8 @@ async function gerarParcelas(){
   const inicio=document.getElementById('p-inicio').value;
   if(!total||!inicio){alert('Preencha o valor total e o primeiro vencimento.');return;}
   if(!confirm(`Gerar ${qtd} parcela(s) de ${fmt(total/qtd)}? As parcelas existentes desta venda serão substituídas.`))return;
-  await SB.from('parcelas').delete().eq('empresa_id',EMP_ID).eq('venda_id',VENDA_ATIVA);
-  const{data:vd}=await SB.from('vendas').select('servico,cliente_nome').eq('empresa_id',EMP_ID).eq('id',VENDA_ATIVA).single();
+  await SB.from('parcelas').delete().eq('venda_id',VENDA_ATIVA);
+  const{data:vd}=await SB.from('vendas').select('servico,cliente_nome').eq('id',VENDA_ATIVA).single();
   const porParcela=total/qtd;
   const rows=[];
   for(let i=0;i<qtd;i++){
@@ -2720,14 +2566,14 @@ async function gerarParcelas(){
     d.setMonth(d.getMonth()+i);
     rows.push({venda_id:VENDA_ATIVA,venda_servico:vd?.servico||'',cliente_nome:vd?.cliente_nome||'',numero:i+1,total_parcelas:qtd,valor:parseFloat(porParcela.toFixed(2)),data_vencimento:d.toISOString().split('T')[0],status:'Pendente'});
   }
-  const{error}=await SB.from('parcelas').insert(rows.map(r=>({...r,empresa_id:EMP_ID})));
+  const{error}=await SB.from('parcelas').insert(rows);
   if(error){alert('Erro ao gerar parcelas: '+error.message);return;}
   await log('Financeiro',`${qtd} parcela(s) gerada(s) — ${vd?.cliente_nome}: ${vd?.servico}`,'Pendente');
   carregarParcelas(VENDA_ATIVA);renderVendas();renderDashboard();renderFinanceiro();
 }
 
 async function carregarParcelas(vendaId){
-  const{data}=await SB.from('parcelas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('venda_id',vendaId).order('numero');
+  const{data}=await SB.from('parcelas').select('*').eq('venda_id',vendaId).order('numero');
   const el=document.getElementById('parcelas-existentes');
   if(!data||!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:12px 0">Nenhuma parcela gerada ainda. Use o formulário acima para configurar o pagamento.</div>';return;}
   const total=data.reduce((s,p)=>s+Number(p.valor),0);
@@ -2795,7 +2641,7 @@ async function salvarParcelaVenda(id){
 async function excluirParcela(id){
   if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
   if(!confirm('Excluir esta parcela?'))return;
-  await SB.from('parcelas').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  await SB.from('parcelas').delete().eq('id',id);
   carregarParcelas(VENDA_ATIVA);
   renderFinanceiro();
 }
@@ -2990,8 +2836,8 @@ async function renderFinanceiro(){
   _finAtualizarLabel();
 
   const[{data:lancAll},{data:parcAll}]=await Promise.all([
-    SB.from('lancamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('data_lancamento',{ascending:false}),
-    SB.from('parcelas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('data_vencimento'),
+    SB.from('lancamentos').select('*').order('data_lancamento',{ascending:false}),
+    SB.from('parcelas').select('*').order('data_vencimento'),
   ]);
 
   // Aplica filtro nos lançamentos
@@ -3065,7 +2911,7 @@ function _renderTabelaTodos(lista){
 }
 
 async function renderParcelasFinanceiro(parcelas){
-  if(!parcelas){const{data}=await SB.from('parcelas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('data_vencimento');parcelas=data||[];}
+  if(!parcelas){const{data}=await SB.from('parcelas').select('*').order('data_vencimento');parcelas=data||[];}
   const el=document.getElementById('tabela-parcelas-fin');
   if(!parcelas.length){el.innerHTML='<div class="empty">Nenhuma parcela cadastrada. Crie parcelas na aba Vendas → Detalhes → Pagamentos.</div>';return;}
   // ordenar: atrasadas primeiro, depois pendentes por vencimento, depois recebidas
@@ -3110,7 +2956,7 @@ let _parcelaRecId = null;
 
 async function abrirRecebimento(parcelaId){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{data:p}=await SB.from('parcelas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',parcelaId).single();
+  const{data:p}=await SB.from('parcelas').select('*').eq('id',parcelaId).single();
   if(!p) return;
   _parcelaRecId = parcelaId;
 
@@ -3162,7 +3008,7 @@ async function confirmarRecebimento(){
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
 
   // Verifica se já foi marcado como Recebido (evita duplicata)
-  const{data:atual}=await SB.from('parcelas').select('status').eq('empresa_id',EMP_ID).eq('id',_parcelaRecId).single();
+  const{data:atual}=await SB.from('parcelas').select('status').eq('id',_parcelaRecId).single();
   if(atual?.status==='Recebido'){
     // Só atualiza valor/data, não cria novo recebimento
   }
@@ -3187,13 +3033,13 @@ async function renderLancFiltro(tipo){
   const el=document.getElementById(tipo==='Receita'?'tabela-lanc-rec':'tabela-lanc-des');
 
   // Busca lançamentos manuais do tipo
-  const{data:lancAll}=await SB.from('lancamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('tipo',tipo).order('data_lancamento',{ascending:false});
+  const{data:lancAll}=await SB.from('lancamentos').select('*').eq('tipo',tipo).order('data_lancamento',{ascending:false});
   const lancFiltrados=_finFiltrarPorData(lancAll||[],'data_lancamento');
 
   // Para Receitas: inclui também parcelas recebidas no período
   let parcRecebidas=[];
   if(tipo==='Receita'){
-    const{data:parc}=await SB.from('parcelas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('status','Recebido').order('data_recebimento',{ascending:false});
+    const{data:parc}=await SB.from('parcelas').select('*').eq('status','Recebido').order('data_recebimento',{ascending:false});
     parcRecebidas=_finFiltrarPorData(parc||[],'data_recebimento').map(p=>({
       _parcela:true,
       id:p.id,
@@ -3344,7 +3190,7 @@ function calcPreviewDespesa(){
 let _lancEditandoId = null;
 
 async function editarLancamento(id){
-  const{data:l}=await SB.from('lancamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:l}=await SB.from('lancamentos').select('*').eq('id',id).single();
   if(!l){alert('Lançamento não encontrado.');return;}
   _lancEditandoId=id;
   document.getElementById('lanc-modal-titulo').textContent='Editar lançamento';
@@ -3403,7 +3249,7 @@ async function salvarLancamento(){
     const venc=document.getElementById('l-parc-venc').value;
     if(!venc){alert('Informe o primeiro vencimento das parcelas.');return;}
     if(qtd<2){alert('Informe ao menos 2 parcelas.');return;}
-    const{data:lanc,error:eLanc}=await SB.from('lancamentos').insert({empresa_id:EMP_ID,
+    const{data:lanc,error:eLanc}=await SB.from('lancamentos').insert({
       tipo:'Despesa',descricao:desc,valor:Number(valor),
       data_lancamento:document.getElementById('l-data').value||hoje(),
       origem,categoria:categ||null,status:'Pendente',orcamento_id:obraId||null,
@@ -3447,7 +3293,7 @@ async function salvarLancamento(){
 
 // ── PARCELAS A PAGAR ─────────────────────────────────────────
 async function renderParcelasAPagar(){
-  const{data:parcelas}=await SB.from('parcelas_despesa').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('data_vencimento');
+  const{data:parcelas}=await SB.from('parcelas_despesa').select('*').order('data_vencimento');
   const el=document.getElementById('tabela-apagar');
   const pendentes=(parcelas||[]).filter(p=>p.status==='Pendente');
   const totalPend=pendentes.reduce((s,p)=>s+Number(p.valor),0);
@@ -3489,7 +3335,7 @@ async function renderParcelasAPagar(){
 
 async function pagarParcelaDespesa(id){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{data:p}=await SB.from('parcelas_despesa').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:p}=await SB.from('parcelas_despesa').select('*').eq('id',id).single();
   if(!p)return;
 
   // Guarda contra duplo clique
@@ -3501,7 +3347,7 @@ async function pagarParcelaDespesa(id){
   // Cria lançamento confirmado apenas para esta parcela
   // IMPORTANTE: NÃO atualiza o lançamento pai para Confirmado —
   // o pai fica sempre Pendente como referência, evitando dupla contagem
-  await SB.from('lancamentos').insert({empresa_id:EMP_ID,
+  await SB.from('lancamentos').insert({
     tipo:'Despesa',
     descricao:`${p.descricao} (${p.numero}/${p.total_parcelas})`,
     valor:Number(p.valor),
@@ -3520,13 +3366,13 @@ async function pagarParcelaDespesa(id){
 async function excluirParcelaDespesa(id){
   if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
   if(!confirm('Excluir esta parcela?'))return;
-  await SB.from('parcelas_despesa').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  await SB.from('parcelas_despesa').delete().eq('id',id);
   renderParcelasAPagar();renderFinanceiro();
 }
 
 // ── FUNCIONÁRIOS ─────────────────────────────────────────────
 async function renderFuncionarios(){
-  const{data}=await SB.from('funcionarios').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('nome');
+  const{data}=await SB.from('funcionarios').select('*').order('nome');
   const f=data||[];
   document.getElementById('rh-total').textContent=f.length;
   document.getElementById('rh-ativos').textContent=f.filter(x=>x.status==='Ativo').length;
@@ -3542,7 +3388,7 @@ async function salvarFuncionario(){
   const nome=document.getElementById('rh-nome').value.trim();
   const cargo=document.getElementById('rh-cargo').value.trim();
   if(!nome||!cargo){alert('Preencha nome e cargo.');return;}
-  const{error}=await SB.from('funcionarios').insert({empresa_id:EMP_ID,nome,cargo,cpf:document.getElementById('rh-cpf').value,salario:Number(document.getElementById('rh-salario').value||0),data_admissao:document.getElementById('rh-admissao').value||null,regime:document.getElementById('rh-regime').value,telefone:document.getElementById('rh-tel').value,status:document.getElementById('rh-status').value});
+  const{error}=await SB.from('funcionarios').insert({nome,cargo,cpf:document.getElementById('rh-cpf').value,salario:Number(document.getElementById('rh-salario').value||0),data_admissao:document.getElementById('rh-admissao').value||null,regime:document.getElementById('rh-regime').value,telefone:document.getElementById('rh-tel').value,status:document.getElementById('rh-status').value});
   if(error){alert('Erro: '+error.message);return;}
   closeModal('modal-func');['rh-nome','rh-cpf','rh-cargo','rh-salario','rh-tel'].forEach(id=>document.getElementById(id).value='');
   await log('RH','Novo funcionário: '+nome,'Concluído');renderFuncionarios();
@@ -3623,7 +3469,7 @@ async function cbClienteChange(){
   // Preenche o último nº processo do cliente se houver
   const cid=document.getElementById('b-cliente').value;
   if(!cid) return;
-  const{data:p}=await SB.from('processos_cb').select('protocolo').eq('empresa_id',EMP_ID)
+  const{data:p}=await SB.from('processos_cb').select('protocolo')
     .eq('cliente_id',cid).not('protocolo','is',null)
     .order('criado_em',{ascending:false}).limit(1);
   // Só preenche se campo estiver vazio
@@ -3650,7 +3496,7 @@ async function novoProcessoCB(){
 }
 
 async function editarProcessoCB(id){
-  const{data:p}=await SB.from('processos_cb').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:p}=await SB.from('processos_cb').select('*').eq('id',id).single();
   if(!p) return;
   _cbProcessoEditandoId=id;
   document.getElementById('cb-modal-titulo').textContent='Editar processo — Corpo de Bombeiros';
@@ -3688,7 +3534,7 @@ async function salvarProcesso(){
   if(!podeEditar()){alert('Sem permissão.');return;}
   const cid=document.getElementById('b-cliente').value;
   if(!cid){alert('Selecione o cliente.');return;}
-  const{data:cli}=await SB.from('clientes').select('nome,documento').eq('empresa_id',EMP_ID).eq('id',cid).single();
+  const{data:cli}=await SB.from('clientes').select('nome,documento').eq('id',cid).single();
   const grupo   = document.getElementById('b-grupo').value;
   const tipo    = document.getElementById('b-tipo').value;
   const protocolo=document.getElementById('b-protocolo').value.trim();
@@ -3730,7 +3576,7 @@ async function salvarProcesso(){
       await SB.from('clientes').update({ultimo_processo_cb:protocolo}).eq('id',cid);
     }
   } else {
-    ({error}=await SB.from('processos_cb').insert({...payload,empresa_id:EMP_ID}));
+    ({error}=await SB.from('processos_cb').insert(payload));
     // Atualiza nº processo mais recente no cliente
     if(!error && protocolo){
       await SB.from('clientes').update({ultimo_processo_cb:protocolo}).eq('id',cid);
@@ -3744,7 +3590,7 @@ async function salvarProcesso(){
 }
 
 async function renderBombeiros(){
-  const{data}=await SB.from('processos_cb').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('criado_em',{ascending:false});
+  const{data}=await SB.from('processos_cb').select('*').order('criado_em',{ascending:false});
   const procs=data||[];
 
   // Métricas
@@ -3877,7 +3723,7 @@ async function sapsPreencherDados(){
   // Busca documento do cliente e remove todos os símbolos
   let doc='—';
   if(cid){
-    const{data:cl}=await SB.from('clientes').select('documento').eq('empresa_id',EMP_ID).eq('id',cid).single();
+    const{data:cl}=await SB.from('clientes').select('documento').eq('id',cid).single();
     // Remove pontos, traços, barras e espaços — deixa só números
     doc=(cl?.documento||'').replace(/[.\-\/\s]/g,'')||'—';
   }
@@ -3910,7 +3756,7 @@ function copiarTexto(elementId){
 }
 
 async function verTimeline(id){
-  const{data:p}=await SB.from('processos_cb').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:p}=await SB.from('processos_cb').select('*').eq('id',id).single();
   if(!p)return;
   _tlProcessoId=id;
 
@@ -4006,7 +3852,7 @@ let _tlProcessoId=null;
 
 async function marcarEtapaCBSub(id, campo, etapa){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{data:p}=await SB.from('processos_cb').select('etapa_projeto,etapa_vistoria,status_projeto,status_vistoria').eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:p}=await SB.from('processos_cb').select('etapa_projeto,etapa_vistoria,status_projeto,status_vistoria').eq('id',id).single();
   const curVal = p?.[campo];
   const novo = curVal===etapa ? null : etapa;
   const upd={[campo]:novo};
@@ -4049,7 +3895,7 @@ async function avancarEtapaSub(id, campo){
   const ETAPAS_PROJETO=['Levantamento e projeto','Pagamento de taxas','Protocolo no CB','Análise técnica','Aprovação do projeto'];
   const ETAPAS_VISTORIA=['Agendamento de vistoria','Vistoria realizada','Aprovação final','AVCB emitido'];
   const etapas = campo==='etapa_projeto' ? ETAPAS_PROJETO : ETAPAS_VISTORIA;
-  const{data:p}=await SB.from('processos_cb').select(campo).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:p}=await SB.from('processos_cb').select(campo).eq('id',id).single();
   const cur = p?.[campo];
   const idx = cur ? etapas.indexOf(cur) : -1;
   if(idx>=etapas.length-1){alert('Última etapa desta fase.');return;}
@@ -4058,7 +3904,7 @@ async function avancarEtapaSub(id, campo){
 
 async function avancarEtapa(id){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{data:p}=await SB.from('processos_cb').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:p}=await SB.from('processos_cb').select('*').eq('id',id).single();
   const idx=ETAPAS_CB.indexOf(p.etapa);
   if(idx>=ETAPAS_CB.length-1){alert('Processo já na etapa final.');return;}
   const novaEtapa=ETAPAS_CB[idx+1];
@@ -4149,7 +3995,7 @@ async function convidarUsuario(){ criarUsuario(); } // alias de compatibilidade
 async function excluir(tabela,id){
   if(!podeExcluir()){alert('Apenas administradores podem excluir registros.');return;}
   if(!confirm('Confirma a exclusão deste registro?'))return;
-  await Q(tabela).delete().eq('id',id);
+  await SB.from(tabela).delete().eq('id',id);
   const fn={clientes:renderClientes,vendas:renderVendas,lancamentos:renderFinanceiro,funcionarios:renderFuncionarios,processos_cb:renderBombeiros};
   if(fn[tabela])fn[tabela]();
   renderDashboard();
@@ -4169,14 +4015,14 @@ let _orcamentos=[], _itensOrc=[], _clientesOrc=[];
 const CONFIG = {
 
   empresa: {
-    nome:      'JPM ENGENHARIA DE INCÊNDIO',
-    cnpj:      '26.619.473/0001-65',
-    telefone:  '(84) 99911-9505',
-    email:     'contato@jpmincendio.com',
+    nome:      'FIRESTOP ENGENHARIA',
+    cnpj:      '41.465.438/0001-22',
+    telefone:  '(84) 99934-9353',
+    email:     'firestopengenharia@gmail.com',
     site:      '',
     endereco:  '',
-    cidade:    '',
-    cor:       '#1a3a8b',  // azul — pode ajustar depois
+    cidade:    'Tenente Ananias — RN',
+    cor:       '#8b1a1a',  // cor principal usada em PDFs e propostas
   },
 
   // Módulos ativos — false = oculta o menu e bloqueia o acesso
@@ -4186,11 +4032,11 @@ const CONFIG = {
     vendas:      true,
     financeiro:  true,
     funcionarios:true,
-    bombeiros:   true,
+    bombeiros:   true,  // Corpo de Bombeiros — específico para engenharia de segurança
     orcamentos:  true,
-    servicos:    true,
-    tarefas:     true,
-    usuarios:    true,
+    servicos:    true,  // Cronograma / Gantt de obras
+    tarefas:     true,  // Calendário / To-do list
+    usuarios:    true,  // Gerenciamento de usuários (sempre admin-only)
   },
 
 };
@@ -4200,7 +4046,7 @@ const CONFIG = {
 const EMPRESA = CONFIG.empresa;
 
 async function renderOrcamentos(){
-  const{data}=await SB.from('orcamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('numero',{ascending:false});
+  const{data}=await SB.from('orcamentos').select('*').order('numero',{ascending:false});
   _orcamentos=data||[];
   const aprov=_orcamentos.filter(o=>o.status==='Aprovado');
   const env=_orcamentos.filter(o=>o.status==='Enviado');
@@ -4276,8 +4122,8 @@ async function novoOrcamento(){
 async function abrirOrcamento(id){
   ORC_ATIVO=id;
   const[{data:o},{data:itens}]=await Promise.all([
-    SB.from('orcamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single(),
-    SB.from('itens_orcamento').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('orcamento_id',id).order('numero_item'),
+    SB.from('orcamentos').select('*').eq('id',id).single(),
+    SB.from('itens_orcamento').select('*').eq('orcamento_id',id).order('numero_item'),
   ]);
   _itensOrc=itens||[];
 
@@ -4338,7 +4184,7 @@ async function preencherDadosCliente(){
   // Busca do cache, ou do banco se necessário
   let cli=_cliLista.find(c=>c.id===cid);
   if(!cli){
-    const{data}=await SB.from('clientes').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',cid).single();
+    const{data}=await SB.from('clientes').select('*').eq('id',cid).single();
     cli=data;
   }
   if(!cli) return;
@@ -4416,7 +4262,7 @@ async function adicionarItem(){
   if(!desc){alert('Informe a descrição do produto/serviço.');return;}
   if(!qtd||!val){alert('Informe a quantidade e o valor unitário.');return;}
   const num=_itensOrc.length+1;
-  const{data,error}=await SB.from('itens_orcamento').insert({empresa_id:EMP_ID,
+  const{data,error}=await SB.from('itens_orcamento').insert({
     orcamento_id:ORC_ATIVO,
     numero_item:num,
     descricao:desc,
@@ -4441,7 +4287,7 @@ async function adicionarItem(){
 
 async function removerItem(id){
   if(!confirm('Remover este item?'))return;
-  await SB.from('itens_orcamento').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  await SB.from('itens_orcamento').delete().eq('id',id);
   _itensOrc=_itensOrc.filter(i=>i.id!==id);
   _itensOrc.forEach((it,idx)=>it.numero_item=idx+1);
   await _recalcOrcDB();
@@ -4502,8 +4348,8 @@ function renderItensOrc(){
 async function gerarPreviewDoc(){
   if(!ORC_ATIVO)return;
   const[{data:o},{data:itens}]=await Promise.all([
-    SB.from('orcamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',ORC_ATIVO).single(),
-    SB.from('itens_orcamento').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('orcamento_id',ORC_ATIVO).order('numero_item'),
+    SB.from('orcamentos').select('*').eq('id',ORC_ATIVO).single(),
+    SB.from('itens_orcamento').select('*').eq('orcamento_id',ORC_ATIVO).order('numero_item'),
   ]);
   if(!o)return;
   const venc=o.data_emissao&&o.validade_dias?
@@ -4640,7 +4486,7 @@ function imprimirOrcamento(){
   const el=document.getElementById('doc-print');
   if(!el){alert('Abra a aba "Visualizar / Imprimir" primeiro.');return;}
   const w=window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proposta Comercial - JPM Engenharia</title>
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proposta Comercial - Firestop</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;color:#1a1a1a}
@@ -4658,9 +4504,10 @@ function imprimirOrcamento(){
 
 async function copiarLinkCliente(){
   if(!ORC_ATIVO){alert('Abra uma proposta primeiro.');return;}
-  const{data:o}=await SB.from('orcamentos').select('token_cliente,numero,cliente_nome').eq('empresa_id',EMP_ID).eq('id',ORC_ATIVO).single();
+  const{data:o}=await SB.from('orcamentos').select('token_cliente,numero,cliente_nome').eq('id',ORC_ATIVO).single();
   if(!o?.token_cliente){alert('Token não encontrado. Tente reabrir a proposta.');return;}
-  // Salva dados da empresa no orçamento para o portal do cliente
+
+  // Salva dados da empresa no orçamento para o portal do cliente exibir corretamente
   await SB.from('orcamentos').update({
     empresa_nome:     CONFIG.empresa.nome,
     empresa_telefone: CONFIG.empresa.telefone,
@@ -4671,7 +4518,7 @@ async function copiarLinkCliente(){
   const link=`${window.location.origin}/cliente.html?token=${o.token_cliente}`;
   try{
     await navigator.clipboard.writeText(link);
-    alert(`✅ Link copiado!\n\nEnvie este link para ${o.cliente_nome}:\n\n${link}\n\nO cliente poderá acompanhar o cronograma da obra sem precisar fazer login.`);
+    alert(`✅ Link copiado!\n\nEnvie este link para ${o.cliente_nome}:\n\n${link}\n\nO cliente poderá acompanhar o projeto e deixar mensagens sem precisar fazer login.`);
   }catch{
     prompt('Copie o link abaixo:',link);
   }
@@ -4717,7 +4564,7 @@ function calcContratoParcela(){
 
 async function confirmarContratacao(id){
   if(!podeEditar()){alert('Sem permissão.');return;}
-  const{data:o}=await SB.from('orcamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single();
+  const{data:o}=await SB.from('orcamentos').select('*').eq('id',id).single();
   if(!o)return;
   _orcContrato=o;
   document.getElementById('ct-cliente').textContent=o.cliente_nome||'—';
@@ -4736,7 +4583,7 @@ async function confirmarContratacao(id){
   document.getElementById('ct-parcelas-saldo').value='1';
   document.getElementById('ct-vencimento-saldo').value='';
   document.getElementById('ct-preview-parcela').style.display='none';
-  const{data:funcs}=await SB.from('funcionarios').select('id,nome').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('status','Ativo').order('nome');
+  const{data:funcs}=await SB.from('funcionarios').select('id,nome').eq('status','Ativo').order('nome');
   const sel=document.getElementById('ct-responsavel');
   sel.innerHTML='<option value="">Selecione (opcional)</option>';
   (funcs||[]).forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.nome}</option>`);
@@ -4750,7 +4597,7 @@ async function executarContratacao(){
   const tipo=document.querySelector('input[name="ct-tipo"]:checked')?.value||'igual';
   const respId=document.getElementById('ct-responsavel').value;
   let respNome='';
-  if(respId){const{data:rf}=await SB.from('funcionarios').select('nome').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',respId).single();respNome=rf?.nome||'';}
+  if(respId){const{data:rf}=await SB.from('funcionarios').select('nome').eq('id',respId).single();respNome=rf?.nome||'';}
   const rows=[];
   if(tipo==='igual'){
     const qtd=parseInt(document.getElementById('ct-parcelas').value||1);
@@ -4786,7 +4633,7 @@ async function executarContratacao(){
   if(o.cliente_id){
     await SB.from('clientes').update({status:'Ativo'}).eq('id',o.cliente_id);
   }
-  const{data:venda,error:eVenda}=await SB.from('vendas').insert({empresa_id:EMP_ID,
+  const{data:venda,error:eVenda}=await SB.from('vendas').insert({
     cliente_id:o.cliente_id,cliente_nome:o.cliente_nome,servico:o.titulo,
     valor:o.valor_total,etapa:'Fechado',responsavel_nome:respNome,
     data_proposta:hoje(),orcamento_id:o.id,
@@ -4807,8 +4654,8 @@ async function executarContratacao(){
 async function excluirOrc(id){
   if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
   if(!confirm('Excluir esta proposta e todos os seus itens?'))return;
-  await SB.from('itens_orcamento').delete().eq('empresa_id',EMP_ID).eq('orcamento_id',id);
-  await SB.from('orcamentos').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  await SB.from('itens_orcamento').delete().eq('orcamento_id',id);
+  await SB.from('orcamentos').delete().eq('id',id);
   renderOrcamentos();
 }
 // ── IMPORTAR PROPOSTA COM IA ──────────────────────────────────
@@ -4864,7 +4711,7 @@ async function impHandleFile(file){
       msgContent.push({type:'document',source:{type:'base64',media_type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',data:base64}});
     }
 
-    msgContent.push({type:'text',text:`Você está lendo uma proposta comercial da empresa JPM ENGENHARIA DE INCÊNDIO.
+    msgContent.push({type:'text',text:`Você está lendo uma proposta comercial da empresa FIRESTOP ENGENHARIA.
 Extraia os dados e retorne SOMENTE um JSON válido, sem texto antes ou depois, sem markdown, no seguinte formato:
 {
   "cliente": {
@@ -4960,11 +4807,11 @@ async function impPreencherRevisao(dados){
   const doc=(cli.documento||'').replace(/\D/g,'');
   let clienteExistente=null;
   if(doc){
-    const{data:c}=await SB.from('clientes').select('id,nome,documento').eq('empresa_id',EMP_ID).ilike('documento',`%${doc}%`).limit(1);
+    const{data:c}=await SB.from('clientes').select('id,nome,documento').ilike('documento',`%${doc}%`).limit(1);
     if(c&&c.length) clienteExistente=c[0];
   }
   if(!clienteExistente&&cli.nome){
-    const{data:c}=await SB.from('clientes').select('id,nome,documento').eq('empresa_id',EMP_ID).ilike('nome',`%${cli.nome.split(' ')[0]}%`).limit(1);
+    const{data:c}=await SB.from('clientes').select('id,nome,documento').ilike('nome',`%${cli.nome.split(' ')[0]}%`).limit(1);
     if(c&&c.length) clienteExistente=c[0];
   }
   if(clienteExistente){
@@ -5019,7 +4866,7 @@ async function impCriarOrcamento(){
     let clienteId=statusEl.dataset.clienteId||'';
     if(!clienteId){
       // Cria o cliente
-      const{data:novoCli,error:eCli}=await SB.from('clientes').insert({empresa_id:EMP_ID,
+      const{data:novoCli,error:eCli}=await SB.from('clientes').insert({
         nome:     nomeCliente,
         documento:document.getElementById('imp-cli-doc').value||'',
         telefone: document.getElementById('imp-cli-tel').value||'',
@@ -5035,7 +4882,7 @@ async function impCriarOrcamento(){
     }
 
     // 2. Busca dados completos do cliente
-    const{data:cli}=await SB.from('clientes').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',clienteId).single();
+    const{data:cli}=await SB.from('clientes').select('*').eq('id',clienteId).single();
 
     // 3. Gera número da proposta via sequence
     const{data:seqData,error:seqErr}=await SB.rpc('proximo_numero_orcamento');
@@ -5057,7 +4904,7 @@ async function impCriarOrcamento(){
 
     // 5. Cria o orçamento
     const titulo=document.getElementById('imp-titulo').value||'Proposta importada';
-    const{data:orc,error:eOrc}=await SB.from('orcamentos').insert({empresa_id:EMP_ID,
+    const{data:orc,error:eOrc}=await SB.from('orcamentos').insert({
       numero:       seqData,
       cliente_id:   clienteId,
       cliente_nome: cli.nome,
@@ -5068,7 +4915,7 @@ async function impCriarOrcamento(){
       cliente_uf:   cli.uf||'',
       cliente_cep:  cli.cep||'',
       titulo,
-      responsavel:  'JPM',
+      responsavel:  'Firestop',
       data_emissao: hoje(),
       validade_dias:parseInt(document.getElementById('imp-validade').value||10),
       status:       'Rascunho',
@@ -5153,12 +5000,12 @@ async function renderCalendario(){
 }
 
 async function calCarregarListas(){
-  const{data}=await SB.from('listas_tarefas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('criado_em');
+  const{data}=await SB.from('listas_tarefas').select('*').order('criado_em');
   _calListas=data||[];
 }
 
 async function calCarregarTarefas(){
-  const{data}=await SB.from('tarefas').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).order('data').order('hora');
+  const{data}=await SB.from('tarefas').select('*').order('data').order('hora');
   _calTarefas=data||[];
 }
 
@@ -5225,7 +5072,7 @@ function calFecharNovaLista(){
 async function calCriarLista(){
   const nome=document.getElementById('cal-nova-lista-input').value.trim();
   if(!nome) return;
-  const{data,error}=await SB.from('listas_tarefas').insert({empresa_id:EMP_ID,nome}).select().single();
+  const{data,error}=await SB.from('listas_tarefas').insert({nome}).select().single();
   if(error){alert('Erro: '+error.message);return;}
   _calListas.push(data);
   _calListaSel=data.id;
@@ -5239,8 +5086,8 @@ async function calExcluirLista(id, nome){
     ?`Excluir a lista "${nome}" e suas ${count} tarefa${count>1?'s':''}?`
     :`Excluir a lista "${nome}"?`;
   if(!confirm(msg)) return;
-  await SB.from('tarefas').delete().eq('empresa_id',EMP_ID).eq('lista_id',id);
-  await SB.from('listas_tarefas').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  await SB.from('tarefas').delete().eq('lista_id',id);
+  await SB.from('listas_tarefas').delete().eq('id',id);
   _calListas=_calListas.filter(l=>l.id!==id);
   _calTarefas=_calTarefas.filter(t=>t.lista_id!==id);
   if(_calListaSel===id) _calListaSel=null;
@@ -5372,7 +5219,7 @@ async function calQuickAdd(){
   let listaId=_calListaSel;
   if(!listaId&&_calListas.length) listaId=_calListas[0].id;
   if(!listaId){
-    const{data:novaLista}=await SB.from('listas_tarefas').insert({empresa_id:EMP_ID,nome:'Geral'}).select().single();
+    const{data:novaLista}=await SB.from('listas_tarefas').insert({nome:'Geral'}).select().single();
     if(novaLista){_calListas.push(novaLista);listaId=novaLista.id;}
   }
   if(!listaId){alert('Crie uma lista primeiro.');return;}
@@ -5407,8 +5254,8 @@ async function calCancelarTarefa(id){
 
 async function calExcluirTarefaDireto(id, titulo){
   if(!confirm(`Excluir "${titulo}"?\n\nEsta ação não pode ser desfeita.`)) return;
-  const{data:t}=await SB.from('tarefas').select('gcal_event_id').eq('empresa_id',EMP_ID).eq('id',id).single();
-  await SB.from('tarefas').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  const{data:t}=await SB.from('tarefas').select('gcal_event_id').eq('id',id).single();
+  await SB.from('tarefas').delete().eq('id',id);
   if(t?.gcal_event_id&&_gcalIniciado) await gcalExcluirEvento(t.gcal_event_id);
   _calTarefas=_calTarefas.filter(x=>x.id!==id);
   calRenderConteudo();
@@ -5481,7 +5328,7 @@ async function calPopularModalListas(selId){
 
 async function calCarregarResponsaveis(sel=''){
   const s=document.getElementById('tar-responsavel');
-  const{data}=await SB.from('funcionarios').select('nome').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('status','Ativo').order('nome');
+  const{data}=await SB.from('funcionarios').select('nome').eq('status','Ativo').order('nome');
   s.innerHTML='<option value="">— Selecione —</option>'+
     (data||[]).map(f=>`<option ${f.nome===sel?'selected':''}>${f.nome}</option>`).join('');
 }
@@ -5508,7 +5355,7 @@ async function salvarTarefa(){
   if(_tarEditId){
     ({error}=await SB.from('tarefas').update(payload).eq('id',_tarEditId));
     if(!error&&_gcalIniciado){
-      const{data:t}=await SB.from('tarefas').select('gcal_event_id').eq('empresa_id',EMP_ID).eq('id',_tarEditId).single();
+      const{data:t}=await SB.from('tarefas').select('gcal_event_id').eq('id',_tarEditId).single();
       await gcalAtualizarEvento({...payload,id:_tarEditId,gcal_event_id:t?.gcal_event_id});
     }
     const idx=_calTarefas.findIndex(t=>t.id===_tarEditId);
@@ -5539,8 +5386,8 @@ async function cancelarTarefaModal(){
 async function excluirTarefa(){
   if(!_tarEditId) return;
   if(!confirm('Excluir esta tarefa?')) return;
-  const{data:t}=await SB.from('tarefas').select('gcal_event_id').eq('empresa_id',EMP_ID).eq('id',_tarEditId).single();
-  await SB.from('tarefas').delete().eq('empresa_id',EMP_ID).eq('id',_tarEditId);
+  const{data:t}=await SB.from('tarefas').select('gcal_event_id').eq('id',_tarEditId).single();
+  await SB.from('tarefas').delete().eq('id',_tarEditId);
   if(t?.gcal_event_id&&_gcalIniciado) await gcalExcluirEvento(t.gcal_event_id);
   _calTarefas=_calTarefas.filter(t=>t.id!==_tarEditId);
   log('Calendário','Tarefa excluída','Excluído');
@@ -5930,7 +5777,7 @@ function gcalTarefaParaEvento(t){
   if(t.observacoes) descParts.push(t.observacoes);
 
   const evento = {
-    summary: `[JPM] ${t.titulo}`,
+    summary: `[Firestop] ${t.titulo}`,
     start,
     end,
     colorId: corId,
@@ -6079,7 +5926,7 @@ async function gcalImportarEventosExternos(){
         lembrete_min: null,
       };
 
-      const{data:nova,error}=await SB.from('tarefas').insert({...payload,empresa_id:EMP_ID}).select().single();
+      const{data:nova,error}=await SB.from('tarefas').insert(payload).select().single();
       if(!error&&nova){
         _calTarefas.push(nova);
         importados++;
@@ -6130,7 +5977,7 @@ const STATUS_CORES={
 
 async function copiarLinkObraCliente(){
   if(!_ganttOrcId){return;}
-  const{data:o}=await SB.from('orcamentos').select('token_cliente,cliente_nome').eq('empresa_id',EMP_ID).eq('id',_ganttOrcId).single();
+  const{data:o}=await SB.from('orcamentos').select('token_cliente,cliente_nome').eq('id',_ganttOrcId).single();
   if(!o?.token_cliente){alert('Token não encontrado.');return;}
   const link=`${window.location.origin}/cliente.html?token=${o.token_cliente}`;
   try{
@@ -6336,9 +6183,9 @@ async function carregarGantt(id){
   if(!id)return;
   _ganttOrcId=id;
   const[{data:orc},{data:itens},{data:comentarios}]=await Promise.all([
-    SB.from('orcamentos').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('id',id).single(),
-    SB.from('itens_orcamento').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('orcamento_id',id).order('numero_item'),
-    SB.from('gantt_comentarios').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('orcamento_id',id).order('criado_em'),
+    SB.from('orcamentos').select('*').eq('id',id).single(),
+    SB.from('itens_orcamento').select('*').eq('orcamento_id',id).order('numero_item'),
+    SB.from('gantt_comentarios').select('*').eq('orcamento_id',id).order('criado_em'),
   ]);
   _ganttOrc=orc;
   _ganttItens=itens||[];
@@ -6347,7 +6194,7 @@ async function carregarGantt(id){
   // Carrega contagem de subitens para exibir badges na tabela
   if(_ganttItens.length){
     const itemIds=_ganttItens.map(i=>i.id);
-    const{data:todosSubitens}=await SB.from('subitens_item').select('item_id,concluido').eq('empresa_id',EMP_ID).in('item_id',itemIds);
+    const{data:todosSubitens}=await SB.from('subitens_item').select('item_id,concluido').in('item_id',itemIds);
     if(todosSubitens){
       _ganttItens=_ganttItens.map(i=>{
         const subs=todosSubitens.filter(s=>s.item_id===i.id);
@@ -6560,8 +6407,8 @@ async function editarItemGantt(id){
 
   // Busca responsáveis e subitens em paralelo
   const[{data:funcs},{data:subs}]=await Promise.all([
-    SB.from('funcionarios').select('nome').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('status','Ativo').order('nome'),
-    SB.from('subitens_item').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('item_id',id).order('criado_em'),
+    SB.from('funcionarios').select('nome').eq('status','Ativo').order('nome'),
+    SB.from('subitens_item').select('*').eq('item_id',id).order('criado_em'),
   ]);
   _subItensAtivos[id]=subs||[];
 
@@ -6635,7 +6482,7 @@ async function adicionarSubItem(itemId){
   const input=document.getElementById(`ge-sub-novo-${itemId}`);
   const desc=(input?.value||'').trim();
   if(!desc){input?.focus();return;}
-  const{data,error}=await SB.from('subitens_item').insert({empresa_id:EMP_ID,
+  const{data,error}=await SB.from('subitens_item').insert({
     item_id:itemId,
     descricao:desc,
     concluido:false,
@@ -6659,7 +6506,7 @@ async function toggleSubItem(itemId, subId, concluido){
 
 async function excluirSubItem(itemId, subId){
   if(!confirm('Excluir este subitem?')) return;
-  await SB.from('subitens_item').delete().eq('empresa_id',EMP_ID).eq('id',subId);
+  await SB.from('subitens_item').delete().eq('id',subId);
   _subItensAtivos[itemId]=(_subItensAtivos[itemId]||[]).filter(s=>s.id!==subId);
   document.getElementById(`ge-subs-lista-${itemId}`).innerHTML=renderSubItensLista(itemId);
   await recalcularProgressoSubItens(itemId);
@@ -6785,7 +6632,7 @@ function renderComentarios(lista){
   el.innerHTML=lista.map(c=>`
     <div style="padding:10px 14px;background:${c.tipo_usuario==='cliente'?'var(--blue-bg)':'var(--surface2)'};border-radius:var(--r);margin-bottom:8px;border-left:3px solid ${c.tipo_usuario==='cliente'?'var(--blue)':'var(--border2)'}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <strong style="font-size:12px">${c.tipo_usuario==='cliente'?'👤 '+c.autor:'🔥 JPM Engenharia'}</strong>
+        <strong style="font-size:12px">${c.tipo_usuario==='cliente'?'👤 '+c.autor:'🧯 Firestop Engenharia'}</strong>
         <span style="font-size:11px;color:var(--text3)">${fmtData(c.criado_em?.split('T')[0])} ${c.criado_em?.split('T')[1]?.slice(0,5)||''}</span>
       </div>
       <div style="font-size:13px;line-height:1.5;white-space:pre-wrap">${c.texto}</div>
@@ -6796,16 +6643,16 @@ function renderComentarios(lista){
 async function enviarComentario(){
   const texto=document.getElementById('gantt-novo-comentario').value.trim();
   if(!texto||!_ganttOrcId){alert('Escreva um comentário.');return;}
-  const{error}=await SB.from('gantt_comentarios').insert({empresa_id:EMP_ID,
+  const{error}=await SB.from('gantt_comentarios').insert({
     orcamento_id: _ganttOrcId,
     texto,
-    autor:       'JPM',
+    autor:       'Firestop',
     tipo_usuario:'interno',
   });
   if(error){alert('Erro: '+error.message);return;}
   document.getElementById('gantt-novo-comentario').value='';
   // Recarrega comentários
-  const{data}=await SB.from('gantt_comentarios').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).eq('orcamento_id',_ganttOrcId).order('criado_em');
+  const{data}=await SB.from('gantt_comentarios').select('*').eq('orcamento_id',_ganttOrcId).order('criado_em');
   renderComentarios(data||[]);
   carregarNotificacoes();
 }
@@ -6923,7 +6770,7 @@ async function renderGanttFinanceiro(){
 async function excluirLancObra(id){
   if(!podeExcluir()){alert('Apenas administradores podem excluir.');return;}
   if(!confirm('Excluir este lançamento?'))return;
-  await SB.from('lancamentos').delete().eq('empresa_id',EMP_ID).eq('id',id);
+  await SB.from('lancamentos').delete().eq('id',id);
   renderGanttFinanceiro();
   renderFinanceiro();
 }
@@ -7232,7 +7079,7 @@ function mostrarNotificacao(titulo, texto, tipo='info'){
 async function renderConfig(){
   if(!isAdmin()) return;
   // Carrega config salva no banco (tabela config_empresa)
-  const{data}=await SB.from('config_empresa').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).limit(1).maybeSingle();
+  const{data}=await SB.from('config_empresa').select('*').limit(1).maybeSingle();
   const cfg=data||{};
   // Preenche campos com valores do banco ou fallback do CONFIG local
   const campos={
@@ -7262,6 +7109,8 @@ async function renderConfig(){
   document.getElementById('cfg-nome').oninput=function(){
     cfgAtualizarPreview(this.value,document.getElementById('cfg-cor').value);
   };
+  // Preview inicial
+  cfgAtualizarPreview(campos.nome, campos.cor);
 }
 
 function cfgAtualizarPreview(nome,cor){
@@ -7295,7 +7144,7 @@ async function salvarConfig(){
   statusEl.textContent='Salvando...';
 
   // Upsert — cria ou atualiza o único registro
-  const{data:existing}=await SB.from('config_empresa').select('id').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).limit(1).maybeSingle();
+  const{data:existing}=await SB.from('config_empresa').select('id').limit(1).maybeSingle();
   let error;
   if(existing?.id){
     ({error}=await SB.from('config_empresa').update(payload).eq('id',existing.id));
@@ -7325,7 +7174,7 @@ async function salvarConfig(){
 // Carrega config do banco ao iniciar o app
 async function carregarConfigEmpresa(){
   try{
-    const{data}=await SB.from('config_empresa').select('*').eq('empresa_id',EMP_ID).eq('empresa_id',EMP_ID).limit(1).maybeSingle();
+    const{data}=await SB.from('config_empresa').select('*').limit(1).maybeSingle();
     if(data){
       // Sobrescreve CONFIG.empresa com valores do banco
       if(data.nome)     CONFIG.empresa.nome     =data.nome;
@@ -7338,288 +7187,7 @@ async function carregarConfigEmpresa(){
     }
   }catch(e){ console.warn('config_empresa não encontrada, usando CONFIG padrão'); }
 }
-
 // ── FIM NOTIFICAÇÕES ──────────────────────────────────────────
-
-// ── ASSISTENTE IA ─────────────────────────────────────────────
-const GEMINI_KEY = 'AIzaSyDxHOfIMB4y_0SUYGbnMWVSZIVE6Ud7ZmI';
-const GEMINI_URL  = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
-const GEMINI_URL2 = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${GEMINI_KEY}`;
-
-// Contexto especialista — normas CBMRN
-const IA_SYSTEM = `Você é um engenheiro especialista em segurança contra incêndio e pânico, com profundo conhecimento nas normas do Corpo de Bombeiros Militar do Rio Grande do Norte (CBMRN) e normas ABNT.
-
-SUAS ESPECIALIDADES:
-- Instruções Técnicas (ITs) do CBMRN 2022/2025 (IT-01 a IT-45)
-- Resoluções Técnicas do CBMRN (RT 03/2023, RT 04/2025, RT 05/2025)
-- Normas ABNT: NBR 13714 (hidrantes), NBR 10897 (chuveiros), NBR 17240 (alarme), NBR 9077 (saídas de emergência), NBR 13768, NBR 15219 e demais normas de segurança contra incêndio
-- Cálculos hidráulicos: pressão residual, vazão, diâmetro de tubulações, reservatório de incêndio (RI)
-- Classificação de edificações e áreas de risco (IT-01 CBMRN)
-- Dimensionamento de sistemas: hidrantes, mangotinhos, sprinklers, extintores, saídas de emergência, brigada de incêndio, sinalização, iluminação de emergência
-
-INSTRUÇÕES TÉCNICAS DISPONÍVEIS NO CBMRN:
-IT-01/2025: Procedimentos administrativos (classificação de edificações, licenciamento)
-IT-02/2022: Conceitos básicos de segurança contra incêndio
-IT-03/2022: Terminologia
-IT-04/2022: Símbolos gráficos para projetos
-IT-05/2022: Segurança urbanística
-IT-06/2022: Acesso de viaturas
-IT-07/2022: Isolamento de risco
-IT-08/2022: Segurança estrutural
-IT-09/2022: Compartimentação horizontal e vertical
-IT-10/2025: Materiais de acabamento e revestimento
-IT-11/2025: Saídas de emergência
-IT-13/2022: Pressurização de escada
-IT-14/2025: Carga de incêndio
-IT-15/2022 (I-VIII): Controle de fumaça
-IT-17/2025: Brigada de incêndio
-IT-18/2025: Iluminação de emergência
-IT-19/2025: Sistema de detecção e alarme
-IT-20/2022: Sinalização de emergência
-IT-21/2025: Extintores
-IT-22/2025: Hidrantes e mangotinhos
-IT-23/2022: Chuveiros automáticos
-IT-24/2022: Chuveiros para depósitos
-IT-25/2022: Líquidos combustíveis e inflamáveis
-IT-28/2022: GLP
-IT-29/2022: Gás natural
-IT-42/2022: Processo técnico simplificado
-IT-43/2025: Edificações existentes
-
-COMO RESPONDER:
-- Seja direto e técnico, como um engenheiro experiente falando com outro engenheiro
-- Cite sempre a IT ou NBR específica que fundamenta a resposta
-- Para cálculos, mostre o raciocínio passo a passo com fórmulas
-- Quando houver diferença entre CBMRN e ABNT, destaque qual prevalece no RN
-- Use formatação com bullets e negrito para facilitar leitura
-- Se não souber com certeza, diga explicitamente e recomende consultar a IT original
-- Responda em português brasileiro`;
-
-// Estado do chat
-let _iaConvs = []; // [{id, titulo, msgs:[{role,text,ts}]}]
-let _iaConvAtiva = null;
-let _iaFloatAberto = false;
-let _iaFloatMsgs = []; // msgs do chat flutuante (sessão)
-
-// ── HISTÓRICO (localStorage) ──────────────────────────────────
-function iaCarregarHistorico(){
-  try{ _iaConvs=JSON.parse(localStorage.getItem('ia_convs')||'[]'); }catch(e){ _iaConvs=[]; }
-}
-function iaSalvarHistorico(){
-  try{ localStorage.setItem('ia_convs',JSON.stringify(_iaConvs.slice(0,50))); }catch(e){}
-}
-
-// ── RENDERIZAR HISTÓRICO ──────────────────────────────────────
-function iaRenderHistorico(){
-  const el=document.getElementById('ia-historico-lista');
-  if(!el) return;
-  if(!_iaConvs.length){
-    el.innerHTML='<div style="font-size:12px;color:var(--text3);padding:8px 4px">Nenhuma conversa ainda.</div>';
-    return;
-  }
-  el.innerHTML=_iaConvs.map(c=>`
-    <div onclick="iaAbrirConversa('${c.id}')"
-      style="padding:8px 10px;border-radius:var(--r);cursor:pointer;background:${_iaConvAtiva===c.id?'var(--blue-bg)':'none'};border:0.5px solid ${_iaConvAtiva===c.id?'var(--blue)':'transparent'};transition:background .15s"
-      onmouseover="if('${c.id}'!=='${_iaConvAtiva}')this.style.background='var(--surface2)'"
-      onmouseout="if('${c.id}'!=='${_iaConvAtiva}')this.style.background='none'">
-      <div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:${_iaConvAtiva===c.id?'var(--blue)':'var(--text)'}">${c.titulo}</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:2px">${c.msgs.length} mensagem${c.msgs.length!==1?'s':''}</div>
-    </div>`).join('');
-}
-
-// ── NOVA CONVERSA ─────────────────────────────────────────────
-function iaNovaCONVERSA(){
-  const id='conv_'+Date.now();
-  _iaConvAtiva=id;
-  _iaConvs.unshift({id, titulo:'Nova conversa', msgs:[]});
-  iaSalvarHistorico();
-  iaRenderHistorico();
-  iaRenderMsgs('full');
-  document.getElementById('ia-conv-titulo').textContent='Nova conversa';
-  document.getElementById('ia-boas-vindas').style.display='block';
-}
-
-// ── ABRIR CONVERSA ────────────────────────────────────────────
-function iaAbrirConversa(id){
-  _iaConvAtiva=id;
-  const conv=_iaConvs.find(c=>c.id===id);
-  if(!conv) return;
-  document.getElementById('ia-conv-titulo').textContent=conv.titulo;
-  document.getElementById('ia-boas-vindas').style.display=conv.msgs.length?'none':'block';
-  iaRenderMsgs('full');
-  iaRenderHistorico();
-}
-
-// ── RENDERIZAR MENSAGENS ──────────────────────────────────────
-function iaRenderMsgs(mode){
-  const el=document.getElementById(`ia-msgs-${mode}`);
-  if(!el) return;
-  const msgs = mode==='float' ? _iaFloatMsgs
-    : (_iaConvs.find(c=>c.id===_iaConvAtiva)?.msgs||[]);
-  if(!msgs.length) return;
-
-  // Remove boas vindas se houver msgs
-  const bv=document.getElementById('ia-boas-vindas');
-  if(bv) bv.style.display='none';
-
-  const novos=msgs.slice(-(mode==='float'?50:msgs.length));
-  const html=novos.map(m=>`
-    <div style="display:flex;gap:10px;align-items:flex-start;${m.role==='user'?'flex-direction:row-reverse':''}">
-      <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;
-        ${m.role==='user'?'background:var(--blue-bg);color:var(--blue)':'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff'}">
-        ${m.role==='user'?'👤':'✦'}
-      </div>
-      <div style="max-width:80%;padding:10px 14px;border-radius:${m.role==='user'?'12px 4px 12px 12px':'4px 12px 12px 12px'};
-        font-size:${mode==='float'?'12px':'13px'};line-height:1.6;
-        background:${m.role==='user'?'var(--blue-bg)':'var(--surface2)'};
-        color:var(--text);white-space:pre-wrap">
-        ${iaFormatarTexto(m.text)}
-      </div>
-    </div>`).join('');
-
-  if(mode==='full'){
-    const msgsEl=document.getElementById('ia-msgs-full');
-    // Mantém as boas-vindas e adiciona mensagens
-    const bvEl=document.getElementById('ia-boas-vindas');
-    if(bvEl) bvEl.remove();
-    msgsEl.innerHTML=html;
-  } else {
-    // Float: substitui apenas as mensagens (mantém a boas-vindas se vazio)
-    const bvEl=el.querySelector('div[style*="text-align:center"]');
-    if(bvEl) bvEl.remove();
-    el.innerHTML=html;
-  }
-  el.scrollTop=el.scrollHeight;
-}
-
-function iaFormatarTexto(txt){
-  return txt
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g,'<em>$1</em>')
-    .replace(/`(.*?)`/g,'<code style="background:var(--surface);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px">$1</code>')
-    .replace(/^- (.+)$/gm,'• $1')
-    .replace(/^#{1,3} (.+)$/gm,'<strong style="font-size:1.05em">$1</strong>');
-}
-
-// ── ENVIAR MENSAGEM ───────────────────────────────────────────
-async function iaEnviar(mode){
-  const inputEl=document.getElementById(`ia-input-${mode}`);
-  const btnEl=document.getElementById(`ia-btn-${mode}`);
-  const txt=(inputEl?.value||'').trim();
-  if(!txt) return;
-
-  inputEl.value='';
-  if(inputEl.style) inputEl.style.height='44px';
-  btnEl.disabled=true;
-
-  // Garante conversa ativa no modo full
-  if(mode==='full'&&!_iaConvAtiva){
-    iaNovaCONVERSA();
-  }
-
-  const userMsg={role:'user',text:txt,ts:Date.now()};
-
-  if(mode==='float'){
-    _iaFloatMsgs.push(userMsg);
-  } else {
-    const conv=_iaConvs.find(c=>c.id===_iaConvAtiva);
-    if(conv){
-      conv.msgs.push(userMsg);
-      // Define título da conversa pela primeira pergunta
-      if(conv.msgs.length===1) conv.titulo=txt.slice(0,50)+(txt.length>50?'...':'');
-    }
-  }
-  iaRenderMsgs(mode);
-
-  // Indicador de digitação
-  const msgsEl=document.getElementById(`ia-msgs-${mode}`);
-  const typingId=`ia-typing-${mode}`;
-  msgsEl.insertAdjacentHTML('beforeend',`
-    <div id="${typingId}" style="display:flex;gap:10px;align-items:flex-start">
-      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0">✦</div>
-      <div style="padding:10px 14px;background:var(--surface2);border-radius:4px 12px 12px 12px;font-size:13px;color:var(--text3)">
-        <span style="animation:pulse 1s infinite">Analisando...</span>
-      </div>
-    </div>`);
-  msgsEl.scrollTop=msgsEl.scrollHeight;
-
-  try{
-    // Monta histórico para contexto
-    const allMsgs = mode==='float' ? _iaFloatMsgs : (_iaConvs.find(c=>c.id===_iaConvAtiva)?.msgs||[]);
-    const contents = allMsgs.map(m=>({
-      role: m.role==='user'?'user':'model',
-      parts:[{text:m.text}]
-    }));
-
-    const body=JSON.stringify({
-        system_instruction:{parts:[{text:IA_SYSTEM}]},
-        contents,
-        generationConfig:{temperature:0.3,maxOutputTokens:8192}
-      });
-
-    // Tenta modelo principal, faz fallback automaticamente se sobrecarregado
-    let resp = await fetch(GEMINI_URL,{method:'POST',headers:{'Content-Type':'application/json'},body});
-    let data = await resp.json();
-    if(data.error?.message?.includes('high demand')||data.error?.status==='UNAVAILABLE'){
-      resp = await fetch(GEMINI_URL2,{method:'POST',headers:{'Content-Type':'application/json'},body});
-      data = await resp.json();
-    }
-    if(data.error) throw new Error(data.error.message);
-
-    const respText=data.candidates?.[0]?.content?.parts?.[0]?.text||'Não obtive resposta. Tente novamente.';
-    const asstMsg={role:'assistant',text:respText,ts:Date.now()};
-
-    document.getElementById(typingId)?.remove();
-
-    if(mode==='float'){
-      _iaFloatMsgs.push(asstMsg);
-    } else {
-      const conv=_iaConvs.find(c=>c.id===_iaConvAtiva);
-      if(conv) conv.msgs.push(asstMsg);
-      iaSalvarHistorico();
-      iaRenderHistorico();
-    }
-    iaRenderMsgs(mode);
-
-  }catch(e){
-    document.getElementById(typingId)?.remove();
-    const errMsg={role:'assistant',text:`⚠️ Erro: ${e.message}. Verifique sua conexão e tente novamente.`,ts:Date.now()};
-    if(mode==='float') _iaFloatMsgs.push(errMsg);
-    else { const conv=_iaConvs.find(c=>c.id===_iaConvAtiva); if(conv) conv.msgs.push(errMsg); }
-    iaRenderMsgs(mode);
-  }finally{
-    btnEl.disabled=false;
-  }
-}
-
-function iaEnviarSugestao(txt){
-  const input=document.getElementById('ia-input-full');
-  if(input){ input.value=txt; iaEnviar('full'); }
-}
-
-// ── TOGGLE FLUTUANTE ──────────────────────────────────────────
-function iaToggleFloat(){
-  _iaFloatAberto=!_iaFloatAberto;
-  const panel=document.getElementById('ia-float-panel');
-  panel.style.display=_iaFloatAberto?'flex':'none';
-  if(_iaFloatAberto) document.getElementById('ia-input-float')?.focus();
-}
-
-// ── INIT IA ───────────────────────────────────────────────────
-function iaInit(){
-  iaCarregarHistorico();
-  // Se não há conversa ativa, prepara uma nova ao abrir a página
-  if(!_iaConvAtiva && _iaConvs.length){
-    _iaConvAtiva=_iaConvs[0].id;
-  }
-}
-
-// CSS para animação do typing
-const iaStyle=document.createElement('style');
-iaStyle.textContent=`@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}`;
-document.head.appendChild(iaStyle);
-
-// ── FIM ASSISTENTE IA ─────────────────────────────────────────
 
 // ── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -7637,4 +7205,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-                                                                                                      
