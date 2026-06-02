@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Gerar hash de senha</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:480px;margin:60px auto;padding:20px;background:#f5f5f5}
+  .card{background:#fff;border-radius:12px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+  h2{margin:0 0 6px;font-size:18px}
+  p{margin:0 0 20px;color:#666;font-size:13px}
+  label{font-size:13px;font-weight:600;display:block;margin-bottom:5px}
+  input{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:14px}
+  button{width:100%;padding:11px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+  button:hover{background:#1d4ed8}
+  .result{margin-top:16px;padding:12px;background:#f0fdf4;border:1.5px solid #a8d5a8;border-radius:8px;display:none}
+  .result label{color:#166534;margin-bottom:4px}
+  .hash{font-family:monospace;font-size:11px;word-break:break-all;background:#fff;padding:8px;border-radius:6px;border:1px solid #ddd;user-select:all}
+  .copy-btn{margin-top:8px;width:auto;padding:6px 16px;font-size:12px;background:#166534}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>Gerador de hash de senha</h2>
+  <p>Use para criar ou redefinir senha de usuário no sistema GestãoPRO</p>
+  <label>Usuário</label>
+  <input id="usuario" placeholder="Ex: romulo">
+  <label>Senha</label>
+  <input id="senha" type="password" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')gerar()">
+  <button onclick="gerar()">Gerar hash</button>
+  <div class="result" id="result">
+    <label>Hash SHA-256 (cole no Supabase):</label>
+    <div class="hash" id="hash"></div>
+    <button class="copy-btn" onclick="copiar()">Copiar hash</button>
+    <p style="margin-top:12px;font-size:12px;color:#555">Execute no SQL Editor do Supabase:</p>
+    <div class="hash" id="sql" style="font-size:10px"></div>
+    <button class="copy-btn" onclick="copiarSQL()">Copiar SQL</button>
+  </div>
+</div>
+<script>
+async function gerar(){
+  const senha=document.getElementById('senha').value;
+  const usuario=document.getElementById('usuario').value.trim().toLowerCase();
+  if(!senha){alert('Digite uma senha.');return;}
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(senha));
+  const hash=Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  document.getElementById('hash').textContent=hash;
+  document.getElementById('sql').textContent=
+    `UPDATE public.perfis SET senha_hash='${hash}' WHERE usuario='${usuario||'SEU_USUARIO'}';`;
+  document.getElementById('result').style.display='block';
+}
+function copiar(){
+  navigator.clipboard.writeText(document.getElementById('hash').textContent);
+  alert('Hash copiado!');
+}
+function copiarSQL(){
+  navigator.clipboard.writeText(document.getElementById('sql').textContent);
+  alert('SQL copiado!');
+}
+</script>
+</body>
+</html>

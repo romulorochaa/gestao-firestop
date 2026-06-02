@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Portal do Cliente — GestãoPRO</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f6f5f2;--surface:#fff;--surface2:#f0eeea;--border:#e2e0db;--border2:#ccc9c2;
+  --text:#1c1b18;--text2:#6b6860;--text3:#9e9b94;
+  --blue:#1a5fb4;--blue-bg:#e8f0fb;
+  --green:#2d6a2d;--green-bg:#e8f5e8;
+  --amber:#7a4f00;--amber-bg:#fef3e2;
+  --red:#c0392b;--red-bg:#fdecea;
+  --accent:#1a5fb4; /* substituído pelo JS com a cor da empresa */
+  --r:10px;--r2:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04)
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── HEADER ── */
+.header{background:var(--accent,#1a5fb4);color:#fff;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.header-inner{max-width:860px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:14px}
+.header-logo{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0}
+.header-empresa{font-size:13px;font-weight:700;letter-spacing:.01em;flex-shrink:0}
+.hdiv{width:1px;height:28px;background:rgba(255,255,255,.25);flex-shrink:0}
+.hinfo{flex:1;min-width:0}
+.hinfo h1{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hinfo p{font-size:11px;opacity:.75;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── ABAS ── */
+.tabs{background:var(--surface);border-bottom:0.5px solid var(--border);position:sticky;top:62px;z-index:99}
+.tabs-inner{max-width:860px;margin:0 auto;display:flex;padding:0 16px}
+.tab{padding:13px 16px;font-size:13px;font-weight:500;color:var(--text2);border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;transition:color .15s}
+.tab.active{color:var(--accent,#1a5fb4);border-bottom-color:var(--accent,#1a5fb4)}
+
+/* ── CONTAINER ── */
+.container{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--r2);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text)}
+
+/* ── MÉTRICAS ── */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.metric{background:var(--surface2);border-radius:var(--r);padding:14px;text-align:center}
+.metric-v{font-size:22px;font-weight:700;line-height:1}
+.metric-l{font-size:11px;color:var(--text2);margin-top:4px}
+
+/* ── BARRA ── */
+.prog-barra{height:10px;background:var(--surface2);border-radius:5px;overflow:hidden;margin:14px 0 6px}
+.prog-fill{height:100%;border-radius:5px;transition:width .7s ease}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500}
+.b-green{background:var(--green-bg);color:var(--green)}
+.b-blue{background:var(--blue-bg);color:var(--blue)}
+.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}
+.b-gray{background:var(--surface2);color:var(--text2)}
+
+/* ── ITENS ── */
+.item-row{padding:13px 0;border-bottom:0.5px solid var(--border)}
+.item-row:last-child{border-bottom:none}
+.item-num{font-size:11px;font-weight:700;color:var(--text3);min-width:28px;padding-top:2px;flex-shrink:0}
+.item-barra{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;flex:1}
+.item-barra-fill{height:100%;border-radius:2px}
+
+/* ── PROPOSTA ── */
+.prop-header{background:linear-gradient(135deg,var(--accent,#1a5fb4) 0%,rgba(26,95,180,.8) 100%);color:#fff;border-radius:var(--r2) var(--r2) 0 0;padding:28px 24px;margin:-20px -20px 20px}
+.prop-numero{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.75;margin-bottom:6px}
+.prop-titulo{font-size:20px;font-weight:700;line-height:1.3;margin-bottom:4px}
+.prop-cliente{font-size:13px;opacity:.85}
+.prop-table{width:100%;border-collapse:collapse;font-size:13px}
+.prop-table th{text-align:left;padding:8px 10px;background:var(--surface2);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.prop-table td{padding:10px 10px;border-bottom:0.5px solid var(--border);vertical-align:top}
+.prop-table tr:last-child td{border-bottom:none}
+.prop-total{background:var(--surface2);border-radius:var(--r);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+
+/* ── COMENTÁRIOS ── */
+.msg{padding:12px 14px;border-radius:var(--r);margin-bottom:10px;line-height:1.5}
+.msg.empresa{background:var(--surface2);border-left:3px solid var(--border2)}
+.msg.cliente{background:var(--blue-bg);border-left:3px solid var(--blue)}
+.msg-autor{font-size:12px;font-weight:600;margin-bottom:5px}
+.msg-texto{font-size:13px;white-space:pre-wrap}
+.msg-data{font-size:11px;color:var(--text3);margin-top:5px}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg label{font-size:12px;font-weight:500;color:var(--text2)}
+.fg input,.fg textarea{padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s}
+.fg input:focus,.fg textarea:focus{border-color:var(--accent,#1a5fb4)}
+.fg textarea{resize:vertical;min-height:90px}
+.btn-primary{width:100%;padding:12px;background:var(--accent,#1a5fb4);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;transition:opacity .15s}
+.btn-primary:disabled{opacity:.55;cursor:not-allowed}
+.btn-primary:hover:not(:disabled){opacity:.88}
+
+/* ── CONTATO ── */
+.contact-row{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none;padding:12px;border-radius:var(--r);margin-bottom:8px;transition:opacity .15s}
+.contact-row:hover{opacity:.8}
+.contact-row:last-child{margin-bottom:0}
+
+/* ── SPLASH / ERRO ── */
+.splash{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center}
+.splash-icon{width:64px;height:64px;border-radius:18px;background:var(--accent,#1a5fb4);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent,#1a5fb4);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rodape{text-align:center;padding:18px;font-size:12px;color:var(--text3);border-top:0.5px solid var(--border);margin-top:8px}
+.alerta{border-radius:var(--r);padding:12px 14px;font-size:13px;margin-bottom:14px}
+.alerta.danger{background:var(--red-bg);color:var(--red);border:0.5px solid #f5c0bc}
+.alerta.warning{background:var(--amber-bg);color:var(--amber);border:0.5px solid #f5d79e}
+
+/* Responsivo */
+@media(max-width:480px){
+  .prop-header{padding:20px 16px;margin:-16px -16px 16px}
+  .prop-titulo{font-size:16px}
+  .metrics{grid-template-columns:repeat(3,1fr);gap:8px}
+  .metric-v{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div id="splash" class="splash">
+  <div class="splash-icon" id="splash-icon">G</div>
+  <div class="spinner"></div>
+  <p style="font-size:14px;color:var(--text2)">Carregando seu portal...</p>
+</div>
+
+<div id="tela-erro" class="splash" style="display:none">
+  <div style="font-size:48px">🔒</div>
+  <p style="font-size:20px;font-weight:700">Link inválido</p>
+  <p style="font-size:14px;color:var(--text2);max-width:320px;line-height:1.6">Este link não é válido ou expirou. Entre em contato com a empresa responsável pelo seu projeto.</p>
+</div>
+
+<div id="app" style="display:none">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-logo" id="h-logo">G</div>
+      <div class="header-empresa" id="h-empresa">GestãoPRO</div>
+      <div class="hdiv"></div>
+      <div class="hinfo">
+        <h1 id="h-titulo">Carregando...</h1>
+        <p id="h-cliente"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abas -->
+  <div class="tabs">
+    <div class="tabs-inner">
+      <div class="tab active" id="tab-cronograma" onclick="setAba('cronograma')">📊 Andamento</div>
+      <div class="tab" id="tab-proposta" onclick="setAba('proposta')">📄 Proposta</div>
+      <div class="tab" id="tab-mensagens" onclick="setAba('mensagens')">💬 Mensagens <span id="badge-msgs" style="display:none;background:#c0392b;color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px"></span></div>
+      <div class="tab" id="tab-contato" onclick="setAba('contato')">📞 Contato</div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- ABA: ANDAMENTO -->
+    <div id="aba-cronograma">
+      <div id="alerta-div"></div>
+
+      <div class="card">
+        <div style="text-align:center;padding:8px 0 16px">
+          <div style="font-size:52px;font-weight:700;line-height:1" id="pct-num">0%</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px">progresso geral da obra</div>
+        </div>
+        <div class="prog-barra"><div class="prog-fill" id="barra" style="width:0%"></div></div>
+        <div class="metrics" style="margin-top:14px">
+          <div class="metric"><div class="metric-v" id="m-total">0</div><div class="metric-l">itens</div></div>
+          <div class="metric"><div class="metric-v" id="m-ok" style="color:var(--green)">0</div><div class="metric-l">concluídos</div></div>
+          <div class="metric"><div class="metric-v" id="m-prazo">—</div><div class="metric-l" id="m-prazo-l">prazo</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Itens da obra</div>
+        <div id="lista-itens"><p style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Carregando itens...</p></div>
+      </div>
+
+      <div class="card" id="card-cron" style="display:none">
+        <div class="card-title">Cronograma previsto</div>
+        <div id="cron-datas"></div>
+      </div>
+    </div>
+
+    <!-- ABA: PROPOSTA -->
+    <div id="aba-proposta" style="display:none">
+      <div class="card" id="card-proposta">
+        <p style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Carregando proposta...</p>
+      </div>
+    </div>
+
+    <!-- ABA: MENSAGENS -->
+    <div id="aba-mensagens" style="display:none">
+      <div class="card">
+        <div class="card-title">Mensagens do projeto</div>
+        <div id="lista-msgs" style="max-height:420px;overflow-y:auto;margin-bottom:16px">
+          <p style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Nenhuma mensagem ainda.</p>
+        </div>
+        <div style="height:0.5px;background:var(--border);margin-bottom:16px"></div>
+        <div class="fg"><label>Seu nome *</label><input id="c-nome" placeholder="Como devo te chamar?" maxlength="60" autocomplete="name"></div>
+        <div class="fg"><label>Mensagem *</label><textarea id="c-texto" placeholder="Dúvidas, observações ou atualizações sobre o projeto..."></textarea></div>
+        <button class="btn-primary" id="btn-send" onclick="enviarMsg()">Enviar mensagem</button>
+      </div>
+    </div>
+
+    <!-- ABA: CONTATO -->
+    <div id="aba-contato" style="display:none">
+      <div class="card">
+        <div class="card-title" id="contato-titulo">Fale conosco</div>
+        <div id="contato-links"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rodape" id="rodape">Portal do Cliente — GestãoPRO</div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+// Supabase — preenchido dinamicamente pelo index.html ao gerar o link
+// O token no URL é suficiente para identificar o projeto e a empresa
+const SB_URL = document.currentScript?.dataset?.url || 'SUPABASE_URL';
+const SB_KEY = document.currentScript?.dataset?.key || 'SUPABASE_KEY';
+
+let DB=null, ORC_ID=null, ABA='cronograma';
+const fd=d=>{if(!d)return'—';const[y,m,dd]=(d+'').split('T')[0].split('-');return`${dd}/${m}/${y}`};
+const hj=()=>new Date().toISOString().split('T')[0];
+const da=d=>{if(!d)return null;return Math.ceil((new Date(d.split('T')[0]+'T00:00')-new Date(hj()+'T00:00'))/86400000)};
+const fmt=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const SC={'Pendente':'b-gray','Em andamento':'b-blue','Concluído':'b-green','Bloqueado':'b-red'};
+const CO={'Pendente':'#9e9b94','Em andamento':'#1a5fb4','Concluído':'#2d6a2d','Bloqueado':'#c0392b'};
+
+function setAba(id){
+  ABA=id;
+  ['cronograma','proposta','mensagens','contato'].forEach(a=>{
+    document.getElementById('aba-'+a).style.display=a===id?'block':'none';
+    document.getElementById('tab-'+a).classList.toggle('active',a===id);
+  });
+}
+
+function erroFatal(msg){
+  document.getElementById('splash').style.display='none';
+  document.getElementById('tela-erro').style.display='flex';
+  console.error(msg);
+}
+
+function aplicarCor(cor){
+  if(!cor) return;
+  document.documentElement.style.setProperty('--accent',cor);
+  // Atualiza spinner
+  const sp=document.querySelector('.spinner');
+  if(sp) sp.style.borderTopColor=cor;
+}
+
+// Carrega Supabase dinamicamente
+const scr=document.createElement('script');
+scr.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+scr.onerror=()=>erroFatal('Erro ao carregar biblioteca');
+scr.onload=iniciar;
+document.head.appendChild(scr);
+
+async function iniciar(){
+  try{
+    // Pega URL e KEY do meta tag injetado pelo index.html, ou usa os padrões
+    const metaUrl=document.querySelector('meta[name="sb-url"]')?.content;
+    const metaKey=document.querySelector('meta[name="sb-key"]')?.content;
+    const url=metaUrl||SB_URL;
+    const key=metaKey||SB_KEY;
+
+    if(url==='SUPABASE_URL'){erroFatal('Configuração ausente');return;}
+    DB=supabase.createClient(url,key);
+
+    const tk=new URLSearchParams(location.search).get('token');
+    if(!tk){erroFatal('Token ausente');return;}
+
+    const{data:orc,error:e1}=await DB.from('orcamentos')
+      .select('*').eq('token_cliente',tk).maybeSingle();
+    if(e1||!orc){erroFatal(e1?.message||'Projeto não encontrado');return;}
+    ORC_ID=orc.id;
+
+    const[{data:itens},{data:coms}]=await Promise.all([
+      DB.from('itens_orcamento').select('*').eq('orcamento_id',orc.id).order('numero_item'),
+      DB.from('gantt_comentarios').select('*').eq('orcamento_id',orc.id).order('criado_em').catch(()=>({data:[]})),
+    ]);
+
+    montar(orc,itens||[],coms?.data||coms||[]);
+  }catch(ex){erroFatal(ex.message)}
+}
+
+function montar(orc,itens,coms){
+  // Tenta carregar dados da empresa do orcamento ou usa genérico
+  const nomeEmpresa=orc.empresa_nome||'GestãoPRO';
+  const corEmpresa=orc.empresa_cor||'#1a5fb4';
+  aplicarCor(corEmpresa);
+
+  // Header
+  document.getElementById('h-logo').textContent=nomeEmpresa[0]||'G';
+  document.getElementById('h-empresa').textContent=nomeEmpresa;
+  document.getElementById('h-titulo').textContent=orc.titulo||'Projeto';
+  document.getElementById('h-cliente').textContent=orc.cliente_nome||'';
+  document.title=`${orc.titulo||'Projeto'} — Portal do Cliente`;
+
+  // Splash icon
+  document.getElementById('splash-icon').textContent=nomeEmpresa[0]||'G';
+
+  // Rodapé
+  document.getElementById('rodape').textContent=`Portal do Cliente — ${nomeEmpresa}`;
+
+  // Contato
+  const tel=(orc.empresa_telefone||'').replace(/\D/g,'');
+  const email=orc.empresa_email||'';
+  const linksTel=tel?`
+    <a href="tel:+55${tel}" class="contact-row" style="background:var(--surface2)">
+      <span style="font-size:22px">📞</span>
+      <span><strong>${orc.empresa_telefone}</strong><br><small style="color:var(--text2)">Ligar agora</small></span>
+    </a>
+    <a href="https://wa.me/55${tel}" target="_blank" class="contact-row" style="background:var(--green-bg)">
+      <span style="font-size:22px">💬</span>
+      <span><strong>WhatsApp</strong><br><small style="color:var(--text2)">${orc.empresa_telefone}</small></span>
+    </a>`:'';
+  const linkEmail=email?`
+    <a href="mailto:${email}" class="contact-row" style="background:var(--surface2)">
+      <span style="font-size:22px">✉️</span>
+      <span><strong>E-mail</strong><br><small style="color:var(--text2)">${email}</small></span>
+    </a>`:'';
+  document.getElementById('contato-titulo').textContent=`Fale com ${nomeEmpresa}`;
+  document.getElementById('contato-links').innerHTML=linksTel+linkEmail||'<p style="color:var(--text3);font-size:13px">Nenhum contato cadastrado.</p>';
+
+  // ── ABA ANDAMENTO ──────────────────────────────────────────
+  const total=itens.length;
+  const ok=itens.filter(i=>i.status_execucao==='Concluído').length;
+  const pct=total>0?Math.round(itens.reduce((s,i)=>s+Number(i.progresso||0),0)/total):0;
+
+  const pEl=document.getElementById('pct-num');
+  pEl.textContent=pct+'%';
+  pEl.style.color=pct===100?'var(--green)':pct>60?corEmpresa:'var(--amber)';
+  document.getElementById('m-total').textContent=total;
+  document.getElementById('m-ok').textContent=ok;
+  const barra=document.getElementById('barra');
+  barra.style.width=pct+'%';
+  barra.style.background=pct===100?'var(--green)':corEmpresa;
+
+  // Prazo
+  const fins=itens.filter(i=>i.data_fim_prevista).map(i=>new Date(i.data_fim_prevista+'T00:00').getTime());
+  const mP=document.getElementById('m-prazo'),mL=document.getElementById('m-prazo-l');
+  const aEl=document.getElementById('alerta-div');
+  if(pct===100){
+    mP.textContent='✓';mP.style.color='var(--green)';mL.textContent='concluída';
+  }else if(fins.length){
+    const prazoStr=new Date(Math.max(...fins)).toISOString().split('T')[0];
+    const d=da(prazoStr);
+    if(d<0){
+      mP.textContent=Math.abs(d);mP.style.color='var(--red)';mL.textContent='dias atrasado';
+      aEl.innerHTML=`<div class="alerta danger">⚠️ Prazo vencido há ${Math.abs(d)} dia(s). Entre em contato para mais informações.</div>`;
+    }else if(d===0){
+      mP.textContent='Hoje';mP.style.color='var(--red)';mL.textContent='vence hoje';
+      aEl.innerHTML=`<div class="alerta warning">⚡ O prazo da obra é hoje!</div>`;
+    }else if(d<=7){
+      mP.textContent=d;mP.style.color='var(--amber)';mL.textContent='dias restantes';
+      aEl.innerHTML=`<div class="alerta warning">⚡ Prazo em ${d} dia(s) — ${fd(prazoStr)}.</div>`;
+    }else{
+      mP.textContent=d;mL.textContent='dias restantes';
+    }
+  }
+
+  // Lista de itens
+  document.getElementById('lista-itens').innerHTML=!total
+    ?'<p style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Nenhum item cadastrado ainda.</p>'
+    :itens.map(i=>{
+      const p=Number(i.progresso||0),c=CO[i.status_execucao]||'#9e9b94';
+      return`<div class="item-row">
+        <div style="display:flex;gap:10px;margin-bottom:8px">
+          <span class="item-num">${String(i.numero_item).padStart(2,'0')}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;line-height:1.4">${i.descricao}</div>
+            <div style="margin-top:5px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <span class="badge ${SC[i.status_execucao]||'b-gray'}">${i.status_execucao||'Pendente'}</span>
+              ${i.responsavel_execucao?`<span style="font-size:11px;color:var(--text3)">${i.responsavel_execucao}</span>`:''}
+              ${i.data_fim_prevista?`<span style="font-size:11px;color:var(--text3)">até ${fd(i.data_fim_prevista)}</span>`:''}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:36px">
+          <div class="item-barra"><div class="item-barra-fill" style="width:${p}%;background:${c}"></div></div>
+          <span style="font-size:11px;font-weight:600;color:${p===100?'var(--green)':'var(--text2)'};min-width:30px">${p}%</span>
+        </div>
+      </div>`;
+    }).join('');
+
+  // Cronograma
+  const cd=itens.filter(i=>i.data_inicio_prevista||i.data_fim_prevista);
+  if(cd.length){
+    document.getElementById('card-cron').style.display='block';
+    document.getElementById('cron-datas').innerHTML=`<table class="prop-table">
+      <tr><th>Item</th><th style="width:90px;text-align:center">Início</th><th style="width:90px;text-align:center">Fim</th></tr>
+      ${cd.map(i=>`<tr><td><span style="color:var(--text3);font-weight:700;margin-right:8px">${String(i.numero_item).padStart(2,'0')}</span>${i.descricao}</td>
+        <td style="text-align:center;color:var(--text2);font-size:12px">${fd(i.data_inicio_prevista)}</td>
+        <td style="text-align:center;color:var(--text2);font-size:12px">${fd(i.data_fim_prevista)}</td></tr>`).join('')}
+    </table>`;
+  }
+
+  // ── ABA PROPOSTA ───────────────────────────────────────────
+  const desconto=Number(orc.desconto||0);
+  const subtotal=Number(orc.subtotal||0);
+  const total_val=Number(orc.valor_total||0);
+  const validade=orc.validade_dias?`${orc.validade_dias} dias a partir de ${fd(orc.data_emissao)}`:'—';
+
+  document.getElementById('card-proposta').innerHTML=`
+    <div class="prop-header" style="background:linear-gradient(135deg,${corEmpresa} 0%,${corEmpresa}cc 100%)">
+      <div class="prop-numero">Proposta Nº ${String(orc.numero||0).padStart(5,'0')}</div>
+      <div class="prop-titulo">${orc.titulo||'Proposta Comercial'}</div>
+      <div class="prop-cliente">${orc.cliente_nome||''}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <div style="background:var(--surface2);border-radius:var(--r);padding:12px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:4px">Data de emissão</div>
+        <div style="font-size:13px;font-weight:500">${fd(orc.data_emissao)}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--r);padding:12px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:4px">Validade</div>
+        <div style="font-size:13px;font-weight:500">${validade}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--r);padding:12px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:4px">Prazo de execução</div>
+        <div style="font-size:13px;font-weight:500">${orc.prazo_execucao||'A definir'}</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:var(--r);padding:12px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:4px">Cond. de pagamento</div>
+        <div style="font-size:13px;font-weight:500">${orc.cond_pagto||'A definir'}</div>
+      </div>
+    </div>
+    ${itens.length?`
+    <div class="card-title" style="margin-bottom:10px">Itens / Serviços</div>
+    <table class="prop-table">
+      <tr><th>#</th><th>Descrição</th><th style="text-align:right">Qtd</th><th style="text-align:right">Valor unit.</th><th style="text-align:right">Total</th></tr>
+      ${itens.map(i=>`<tr>
+        <td style="color:var(--text3)">${String(i.numero_item).padStart(2,'0')}</td>
+        <td>${i.descricao||''}</td>
+        <td style="text-align:right;color:var(--text2)">${i.quantidade||1}</td>
+        <td style="text-align:right;color:var(--text2);font-family:'DM Mono',monospace;font-size:12px">${fmt(i.valor_unitario)}</td>
+        <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px">${fmt(i.valor_total)}</td>
+      </tr>`).join('')}
+    </table>`:''}
+    <div style="margin-top:16px">
+      ${desconto>0?`<div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:13px;color:var(--text2)"><span>Subtotal</span><span style="font-family:'DM Mono',monospace">${fmt(subtotal)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 12px;font-size:13px;color:var(--green)"><span>Desconto</span><span style="font-family:'DM Mono',monospace">- ${fmt(desconto)}</span></div>`:''}
+      <div class="prop-total">
+        <span style="font-size:13px;font-weight:600">Valor total</span>
+        <span style="font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:${corEmpresa}">${fmt(total_val)}</span>
+      </div>
+    </div>
+    ${orc.observacoes?`<div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:var(--r);font-size:13px;color:var(--text2);line-height:1.6"><strong style="color:var(--text)">Observações:</strong><br>${orc.observacoes}</div>`:''}
+  `;
+
+  // ── MENSAGENS ──────────────────────────────────────────────
+  renderMsgs(coms);
+  if(coms.length>0){
+    document.getElementById('badge-msgs').textContent=coms.length;
+    document.getElementById('badge-msgs').style.display='inline';
+  }
+
+  // Finaliza
+  document.getElementById('splash').style.display='none';
+  document.getElementById('app').style.display='block';
+}
+
+function renderMsgs(lista){
+  const el=document.getElementById('lista-msgs');
+  el.innerHTML=!lista.length
+    ?'<p style="text-align:center;padding:24px;color:var(--text3);font-size:13px">Nenhuma mensagem ainda. Deixe um comentário abaixo!</p>'
+    :lista.map(c=>`<div class="msg ${c.tipo_usuario==='cliente'?'cliente':'empresa'}">
+      <div class="msg-autor" style="color:${c.tipo_usuario==='cliente'?'var(--blue)':'var(--text)'}">
+        ${c.tipo_usuario==='cliente'?'👤 '+c.autor:'🔧 Equipe técnica'}
+      </div>
+      <div class="msg-texto">${c.texto}</div>
+      <div class="msg-data">${fd(c.criado_em?.split('T')[0])} às ${c.criado_em?.split('T')[1]?.slice(0,5)||''}</div>
+    </div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+async function enviarMsg(){
+  const nome=document.getElementById('c-nome').value.trim();
+  const texto=document.getElementById('c-texto').value.trim();
+  const btn=document.getElementById('btn-send');
+  if(!nome){alert('Informe seu nome.');return;}
+  if(!texto){alert('Escreva uma mensagem.');return;}
+  if(!ORC_ID||!DB){alert('Erro: projeto não identificado.');return;}
+  btn.disabled=true;btn.textContent='Enviando...';
+  const{error}=await DB.from('gantt_comentarios').insert({orcamento_id:ORC_ID,texto,autor:nome,tipo_usuario:'cliente'});
+  if(error){alert('Erro: '+error.message);btn.disabled=false;btn.textContent='Enviar mensagem';return;}
+  document.getElementById('c-texto').value='';
+  const{data}=await DB.from('gantt_comentarios').select('*').eq('orcamento_id',ORC_ID).order('criado_em');
+  const msgs=data||[];
+  renderMsgs(msgs);
+  document.getElementById('badge-msgs').textContent=msgs.length;
+  document.getElementById('badge-msgs').style.display='inline';
+  btn.disabled=false;btn.textContent='Enviar mensagem';
+}
+</script>
+</body>
+</html>
