@@ -1745,8 +1745,6 @@ tr:hover td{background:var(--surface2)}
 </div>
 
 <script>
-const { createClient } = supabase;
-
 const _memStore = {}, _ssStore = {};
 const safeStorage = {
   getItem: (k) => { try { return localStorage.getItem(k); } catch(e) { return _memStore[k] ?? null; } },
@@ -1758,9 +1756,16 @@ const safeSS = {
   setItem: (k, v) => { try { safeSS.setItem(k, v); } catch(e) { _ssStore[k] = v; } },
   removeItem: (k) => { try { safeSS.removeItem(k); } catch(e) { delete _ssStore[k]; } },
 };
-const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl',{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:safeStorage}
-});
+
+let SB = null;
+try {
+  const { createClient } = supabase;
+  SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl',{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:safeStorage}
+  });
+} catch(e) {
+  console.error('Falha ao inicializar Supabase:', e);
+}
 
 let USER={id:null}, PERFIL={nivel:null,nome:''}, VENDA_ATIVA=null, ORC_ATIVO=null;
 
@@ -1809,27 +1814,28 @@ async function entrar(){
   const senha=document.getElementById('login-senha').value||'';
   const errEl=document.getElementById('login-error');
   const btn=document.getElementById('btn-entrar');
+  console.log('[entrar] chamado, usuario:', usuario);
   errEl.textContent='';
-  if(!usuario||!senha){ errEl.textContent='Preencha usuÃ¡rio e senha.'; return; }
+  if(!usuario||!senha){ errEl.textContent='Preencha usuário e senha.'; return; }
+  if(!SB){ errEl.textContent='Erro de conexão com o servidor. Recarregue a página.'; return; }
   btn.disabled=true; btn.textContent='Entrando...';
   try{
-    // Busca usuÃ¡rio pelo username
     const{data:u,error}=await SB.from('perfis')
       .select('*').eq('usuario',usuario).eq('ativo',true).single();
     if(error){
       const msg = error.code==='PGRST116'
-        ? 'UsuÃ¡rio nÃ£o encontrado ou inativo.'
+        ? 'Usuário não encontrado ou inativo.'
         : 'Erro ao acessar o sistema: '+(error.message||error.code||'tente novamente.');
       errEl.textContent=msg; return;
     }
-    if(!u){ errEl.textContent='UsuÃ¡rio nÃ£o encontrado ou inativo.'; return; }
+    if(!u){ errEl.textContent='Usuário não encontrado ou inativo.'; return; }
     const senhaHash=await _hashSenha(senha);
-    if(senhaHash!==u.senha_hash){ errEl.textContent='UsuÃ¡rio ou senha incorretos.'; return; }
+    if(senhaHash!==u.senha_hash){ errEl.textContent='Usuário ou senha incorretos.'; return; }
     safeSS.setItem('gestao_sessao',JSON.stringify({id:u.id}));
     await _iniciarApp(u);
   }catch(err){
     errEl.textContent = err && err.message ? 'Erro no login: '+err.message : 'Erro inesperado. Tente novamente.';
-    console.error('Erro login:', err);
+    console.error('[entrar] erro:', err);
   }finally{
     btn.disabled=false; btn.textContent='Entrar';
   }
