@@ -1746,8 +1746,20 @@ tr:hover td{background:var(--surface2)}
 
 <script>
 const { createClient } = supabase;
+
+const _memStore = {}, _ssStore = {};
+const safeStorage = {
+  getItem: (k) => { try { return localStorage.getItem(k); } catch(e) { return _memStore[k] ?? null; } },
+  setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) { _memStore[k] = v; } },
+  removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) { delete _memStore[k]; } },
+};
+const safeSS = {
+  getItem: (k) => { try { return sessionStorage.getItem(k); } catch(e) { return _ssStore[k] ?? null; } },
+  setItem: (k, v) => { try { sessionStorage.setItem(k, v); } catch(e) { _ssStore[k] = v; } },
+  removeItem: (k) => { try { sessionStorage.removeItem(k); } catch(e) { delete _ssStore[k]; } },
+};
 const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl',{
-  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:safeStorage}
 });
 
 let USER={id:null}, PERFIL={nivel:null,nome:''}, VENDA_ATIVA=null, ORC_ATIVO=null;
@@ -1779,14 +1791,14 @@ function badge(s){
 // ── AUTENTICAÇÃO ──────────────────────────────────────────────
 // Verifica sessão salva ao carregar
 (async()=>{
-  const sessao=sessionStorage.getItem('gestao_sessao');
+  const sessao=safeSS.getItem('gestao_sessao');
   if(sessao){
     try{
       const s=JSON.parse(sessao);
       // Valida que o usuário ainda existe e está ativo
       const{data:u}=await SB.from('perfis').select('*').eq('id',s.id).eq('ativo',true).single();
       if(u){ await _iniciarApp(u); return; }
-    }catch(e){ sessionStorage.removeItem('gestao_sessao'); }
+    }catch(e){ safeSS.removeItem('gestao_sessao'); }
   }
   // Mostra login
   document.getElementById('login-wrap').style.display='flex';
@@ -1809,7 +1821,7 @@ async function entrar(){
     const senhaHash=await _hashSenha(senha);
     if(senhaHash!==u.senha_hash){ errEl.textContent='Senha incorreta.'; return; }
     // Login bem-sucedido
-    sessionStorage.setItem('gestao_sessao',JSON.stringify({id:u.id}));
+    safeSS.setItem('gestao_sessao',JSON.stringify({id:u.id}));
     await _iniciarApp(u);
   }finally{
     btn.disabled=false; btn.textContent='Entrar';
@@ -1882,7 +1894,7 @@ async function _iniciarApp(u){
 }
 
 function sair(){
-  sessionStorage.removeItem('gestao_sessao');
+  safeSS.removeItem('gestao_sessao');
   location.reload();
 }
 
