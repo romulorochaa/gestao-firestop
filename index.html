@@ -1754,9 +1754,9 @@ const safeStorage = {
   removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) { delete _memStore[k]; } },
 };
 const safeSS = {
-  getItem: (k) => { try { return sessionStorage.getItem(k); } catch(e) { return _ssStore[k] ?? null; } },
-  setItem: (k, v) => { try { sessionStorage.setItem(k, v); } catch(e) { _ssStore[k] = v; } },
-  removeItem: (k) => { try { sessionStorage.removeItem(k); } catch(e) { delete _ssStore[k]; } },
+  getItem: (k) => { try { return safeSS.getItem(k); } catch(e) { return _ssStore[k] ?? null; } },
+  setItem: (k, v) => { try { safeSS.setItem(k, v); } catch(e) { _ssStore[k] = v; } },
+  removeItem: (k) => { try { safeSS.removeItem(k); } catch(e) { delete _ssStore[k]; } },
 };
 const SB = createClient('https://hivswkbczfisdtprvhyg.supabase.co','sb_publishable_KMq7ojdfPi9pO81faB6gHw_IxZ2MOTl',{
   auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:safeStorage}
@@ -1816,13 +1816,20 @@ async function entrar(){
     // Busca usuário pelo username
     const{data:u,error}=await SB.from('perfis')
       .select('*').eq('usuario',usuario).eq('ativo',true).single();
-    if(error||!u){ errEl.textContent='Usuário não encontrado ou inativo.'; return; }
-    // Verifica senha com hash
+    if(error){
+      const msg = error.code==='PGRST116'
+        ? 'Usuário não encontrado ou inativo.'
+        : 'Erro ao acessar o sistema: '+(error.message||error.code||'tente novamente.');
+      errEl.textContent=msg; return;
+    }
+    if(!u){ errEl.textContent='Usuário não encontrado ou inativo.'; return; }
     const senhaHash=await _hashSenha(senha);
-    if(senhaHash!==u.senha_hash){ errEl.textContent='Senha incorreta.'; return; }
-    // Login bem-sucedido
+    if(senhaHash!==u.senha_hash){ errEl.textContent='Usuário ou senha incorretos.'; return; }
     safeSS.setItem('gestao_sessao',JSON.stringify({id:u.id}));
     await _iniciarApp(u);
+  }catch(err){
+    errEl.textContent = err && err.message ? 'Erro no login: '+err.message : 'Erro inesperado. Tente novamente.';
+    console.error('Erro login:', err);
   }finally{
     btn.disabled=false; btn.textContent='Entrar';
   }
