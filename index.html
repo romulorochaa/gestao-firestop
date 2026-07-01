@@ -1797,17 +1797,18 @@ async function entrar(){
   const senha=document.getElementById('login-senha').value||'';
   const errEl=document.getElementById('login-error');
   const btn=document.getElementById('btn-entrar');
-  errEl.textContent='';
-  if(!usuario||!senha){ errEl.textContent='Preencha usuário e senha.'; return; }
+  errEl.textContent=''; errEl.style.display='none';
+  const mostrarErro=(msg)=>{ errEl.textContent=msg; errEl.style.display='block'; };
+  if(!usuario||!senha){ mostrarErro('Preencha usuário e senha.'); return; }
   btn.disabled=true; btn.textContent='Entrando...';
   try{
     // Busca usuário pelo username
     const{data:u,error}=await SB.from('perfis')
       .select('*').eq('usuario',usuario).eq('ativo',true).single();
-    if(error||!u){ errEl.textContent='Usuário não encontrado ou inativo.'; return; }
+    if(error||!u){ mostrarErro('Usuário não encontrado ou inativo.'); return; }
     // Verifica senha com hash
     const senhaHash=await _hashSenha(senha);
-    if(senhaHash!==u.senha_hash){ errEl.textContent='Senha incorreta.'; return; }
+    if(senhaHash!==u.senha_hash){ mostrarErro('Senha incorreta.'); return; }
     // Login bem-sucedido
     sessionStorage.setItem('gestao_sessao',JSON.stringify({id:u.id}));
     await _iniciarApp(u);
